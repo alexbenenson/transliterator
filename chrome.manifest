@@ -1,6 +1,6 @@
-content transliterator jar:chrome/transliterator.jar!/content/transliterator/
-locale	transliterator	en-US		jar:chrome/transliterator.jar!/locale/en-US/
-skin	transliterator	classic/1.0	jar:chrome/transliterator.jar!/skin/
+content transliterator chrome/content/transliterator/
+locale	transliterator	en-US		chrome/locale/en-US/
+skin	transliterator	classic/1.0	chrome/skin/
 
 component {6eda0bf0-8f9e-11db-b606-0800200c9a66} components/transliterator.js
 contract  @benya.com/transliterator;1 {6eda0bf0-8f9e-11db-b606-0800200c9a66}
