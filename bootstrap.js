@@ -29,7 +29,7 @@ function startup(data, reason) {
       }
     }
   };
-  Services.scriptloader.loadSubScript(data.resourceURI.spec + "defaults/preferences/transliterator.js", scope, "utf-8");
+  Services.scriptloader.loadSubScript(data.resourceURI.spec + "defaults/prefs.js", scope, "utf-8");
 
   // Now the usual initialization
   TransliteratorService.init();
