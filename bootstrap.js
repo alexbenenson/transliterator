@@ -8,6 +8,7 @@ const CC = Components.classes;
 const CI = Components.interfaces;
 const CU = Components.utils;
 
+CU.import("resource://gre/modules/XPCOMUtils.jsm");
 CU.import("resource://gre/modules/Services.jsm");
 
 function startup(data, reason) {
@@ -43,11 +44,7 @@ function uninstall(data, reason) {}
 
 var TransliteratorService = {
   //method of nsISupports interface
-  QueryInterface: function(aIID) {
-    if (!aIID.equals(CI.nsISupports) && !aIID.equals(CI.nsIObserver) && !aIID.equals(CI.nsISupportsWeakReference) )
-      throw Components.results.NS_ERROR_NO_INTERFACE;
-    return this;
-  },
+  QueryInterface: XPCOMUtils.generateQI([CI.nsIObserver, CI.nsISupportsWeakReference]),
 
   init: function() {
     //init variables
@@ -56,13 +53,10 @@ var TransliteratorService = {
 
 
     // attach to preferences
-    this.prefBranch =  Components.classes['@mozilla.org/preferences-service;1'].getService(CI.nsIPrefService).getBranch("extensions.transliterator.");
+    this.prefBranch =  Services.prefs.getBranch("extensions.transliterator.");
 
     //install pref observer
     this.prefObserver = new PrefObserver(this.prefBranch, this);
-
-    // create logger
-    this.consoleService = Components.classes["@mozilla.org/consoleservice;1"].getService(CI.nsIConsoleService);
 
     // etc
     //this.initEndPoints();
@@ -73,33 +67,32 @@ var TransliteratorService = {
       this.attachToWindow(enumerator.getNext());
 
     // register observers
-    var obs = CC["@mozilla.org/observer-service;1"].getService(CI.nsIObserverService);
-    obs.addObserver(this, "domwindowopened", true);
-    obs.addObserver(this, "domwindowclosed", true);
+    Services.obs.addObserver(this, "domwindowopened", true);
+    Services.obs.addObserver(this, "domwindowclosed", true);
   },
 
   setUnicodePref: function (prefName,prefValue,prefBranch) {
     if (!prefBranch)
       prefBranch = this.prefBranch;
 
-    var sString = Components.classes["@mozilla.org/supports-string;1"].createInstance(Components.interfaces.nsISupportsString);
+    var sString = CC["@mozilla.org/supports-string;1"].createInstance(CI.nsISupportsString);
     sString.data = prefValue;
-    prefBranch.setComplexValue(prefName,Components.interfaces.nsISupportsString,sString);
+    prefBranch.setComplexValue(prefName, CI.nsISupportsString, sString);
   },
 
   getUnicodePref: function (prefName, prefBranch) {
     if (!prefBranch)
-        prefBranch = this.prefBranch;
+      prefBranch = this.prefBranch;
     try {
-        return prefBranch.getComplexValue(prefName, Components.interfaces.nsISupportsString).data;
+      return prefBranch.getComplexValue(prefName, CI.nsISupportsString).data;
     } catch (e) {
-        return prefBranch.getCharPref(prefName);
+      return prefBranch.getCharPref(prefName);
     }
   },
 
   getCharPref: function(prefName, prefBranch) {
     if (!prefBranch)
-        prefBranch = this.prefBranch;
+      prefBranch = this.prefBranch;
     return prefBranch.getCharPref(prefName);
   },
 
@@ -117,10 +110,8 @@ var TransliteratorService = {
 
   cleanup: function() {
     // unregister observers
-    var obs = CC["@mozilla.org/observer-service;1"].getService(CI.nsIObserverService);
-    obs.removeObserver(this, "domwindowopened");
-    obs.removeObserver(this, "domwindowclosed");
-
+    Services.obs.removeObserver(this, "domwindowopened");
+    Services.obs.removeObserver(this, "domwindowclosed");
 
     //detach from prefs
     if (this.prefObserver)
@@ -132,13 +123,13 @@ var TransliteratorService = {
     // etc
   },
 
-  debug : function(value) {
-      dump(value + "\n");
+  debug: function(value) {
+    dump(value + "\n");
   },
 
-  log : function(value) {
+  log: function(value) {
     this.debug(value);
-    this.consoleService.logStringMessage("Transliterator: " + value);
+    Services.console.logStringMessage("Transliterator: " + value);
   },
 
   // nsIObserver implementation
@@ -297,7 +288,7 @@ var TransliteratorService = {
      if (converted)
         return;
 
-     var oldPrefBranch =  Components.classes['@mozilla.org/preferences-service;1'].getService(CI.nsIPrefService).getBranch("extensions.tocyrillic.");
+     var oldPrefBranch = Services.prefs.getBranch("extensions.tocyrillic.");
      var childCount = new Object();
      var list = oldPrefBranch.getChildList("", childCount);
 
@@ -331,11 +322,10 @@ var TransliteratorService = {
 function PrefObserver(prefBranch, translitService) {
     this.service = translitService;
     this.prefBranch = prefBranch;
-    this.pref = prefBranch.QueryInterface(Components.interfaces.nsIPrefBranchInternal);
+    this.pref = prefBranch.QueryInterface(CI.nsIPrefBranchInternal);
     this.pref.addObserver("", this, false);
 
-        //this.service.updateEndPoints();
-
+    //this.service.updateEndPoints();
 }
 
 PrefObserver.prototype = {
