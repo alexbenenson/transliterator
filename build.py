@@ -13,7 +13,7 @@ def is_ignored(path):
   return (
     path.startswith(".") or
     path == "LICENSE" or
-    os.path.splitext(path)[1] in (".md", ".py", ".xpi")
+    os.path.splitext(path)[1] in (".md", ".py", ".pyc", ".xpi")
   )
 
 def add(archive, path, relpath=""):
