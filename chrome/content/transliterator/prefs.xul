@@ -1,11 +1,17 @@
 <?xml version="1.0"?>
 
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+
+<!--
+   - This Source Code is subject to the terms of the Mozilla Public License
+   - version 2.0 (the "License"). You can obtain a copy of the License at
+   - http://mozilla.org/MPL/2.0/. -->
+
 <!--
 //TODO: prefwindow ?
 //TODO: mapping viewer
 //TODO: default labels per layout
-//TODO: locale 
+//TODO: locale
 -->
 <dialog id="transliterator-prefs"
         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
