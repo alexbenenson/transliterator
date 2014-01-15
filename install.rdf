@@ -1,0 +1,198 @@
+<?xml version="1.0"?>
+
+<RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+		xmlns:em="http://www.mozilla.org/2004/em-rdf#">
+
+	<Description about="urn:mozilla:install-manifest">
+		
+    <em:description>Transliterator and keyboard mapper</em:description>
+    <em:creator>Alex Benenson</em:creator>
+    <em:homepageURL>http://www.benya.com/transliterator/</em:homepageURL>
+    <em:optionsURL>chrome://transliterator/content/prefs.xul</em:optionsURL>
+	<em:contributor>Stilian Goranov</em:contributor>
+	<em:contributor>Ljubisa Radovanovic</em:contributor>
+	<em:contributor>Peter Seizov</em:contributor>
+	<em:contributor>B. Kizovski</em:contributor>
+	<em:contributor>Goran Velkov</em:contributor>
+	<em:contributor>Henry H. Tan-Tenn</em:contributor>
+	<em:contributor>Jesse Chisholm</em:contributor>
+	<em:contributor>Jon Thackray</em:contributor>
+	<em:contributor>GaiJin KZ</em:contributor>
+    <em:contributor>Azder</em:contributor>
+    <em:contributor>Joshua David</em:contributor>
+    <em:contributor>Thomas Martin Widmann</em:contributor>
+    <em:contributor>Dimitri Kapshai</em:contributor>
+    <em:contributor>José Antonio Martín</em:contributor>
+    <em:contributor>deramoz</em:contributor>
+    <em:contributor>Alek Misev</em:contributor>
+    <em:contributor>Patrick Hall</em:contributor>
+    <em:contributor>ვახტანგ ჯოხაძე (Vakhtang Jokhadze)</em:contributor>
+    <em:contributor>ONE-SKAY</em:contributor>
+    <em:contributor>Thierry Dolidon</em:contributor>
+    <em:contributor>Jiemurat Mambetkarimov</em:contributor>
+    <em:contributor>Nazym Baibosunov</em:contributor>
+    <em:contributor>Anunad Singh</em:contributor>
+    <em:contributor>Pawel Sirotkin</em:contributor>
+    <em:contributor>Armen Mkrtchyan</em:contributor>
+    <em:contributor>Pavle Mocilac</em:contributor>
+    <em:contributor>Andrew Tagak Jr.</em:contributor>
+    <em:contributor>Liam Hahne</em:contributor>    
+    <em:iconURL>chrome://transliterator/skin/tocyrillic.png</em:iconURL>
+		
+	<em:name>Transliterator</em:name>
+	<em:type>2</em:type>
+	<em:version>0.7.8.3</em:version>
+	<em:id>{07d43380-b306-4a08-a47a-140efd1b4700}</em:id>
+	
+	<em:targetApplication>
+		<!-- Firefox -->
+		<Description>
+			<em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
+			<em:minVersion>1.5</em:minVersion>
+			<em:maxVersion>28.*</em:maxVersion>
+		</Description>
+	</em:targetApplication>
+		
+    <em:targetApplication> <!-- Thunderbird -->
+      <Description>
+        <em:id>{3550f703-e582-4d05-9a08-453d09bdfdc6}</em:id>
+        <em:minVersion>1.0</em:minVersion>
+        <em:maxVersion>28.*</em:maxVersion>
+      </Description>
+    </em:targetApplication>
+
+
+    <!-- Netscape (does this even need a separate entry?) -->
+    <!-- 
+    <em:targetApplication> 
+      <Description>
+        <em:id>{3db10fab-e461-4c80-8b97-957ad5f8ea47}</em:id>
+        <em:minVersion>8.0</em:minVersion>
+        <em:maxVersion>8.1.2</em:maxVersion>
+      </Description>
+    </em:targetApplication>
+    -->
+
+    <!-- Flock -->
+    <!--
+	<em:targetApplication> 
+		<Description>
+			<em:id>{a463f10c-3994-11da-9945-000d60ca027b}</em:id>
+			<em:minVersion>0.4</em:minVersion>
+			<em:maxVersion>1.5+</em:maxVersion>
+		</Description>
+	</em:targetApplication>
+    -->
+    
+    <!-- SeaMonkey -->
+    <em:targetApplication>
+      <Description>
+        <em:id>{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}</em:id>
+        <em:minVersion>2.0</em:minVersion>
+        <em:maxVersion>2.26</em:maxVersion>
+      </Description>
+    </em:targetApplication>
+    
+    <!-- Songbird -->
+    <!--
+    <em:targetApplication> 
+      <Description>
+        <em:id>songbird@songbirdnest.com</em:id>
+        <em:minVersion>0.2</em:minVersion>
+        <em:maxVersion>1.*</em:maxVersion>
+      </Description>
+    </em:targetApplication>
+    -->
+
+    <!-- NVU -->
+    
+    <em:targetApplication> 
+      <Description>
+         <em:id>{136c295a-4a5a-41cf-bf24-5cee526720d5}</em:id>
+         <em:minVersion>0.1</em:minVersion>
+         <em:maxVersion>1.*</em:maxVersion>
+      </Description>
+    </em:targetApplication>
+    
+    <!-- kompozer -->
+    
+    <em:targetApplication> 
+      <Description>
+         <em:id>{20aa4150-b5f4-11de-8a39-0800200c9a66}</em:id>
+         <em:minVersion>0.7.99</em:minVersion>
+         <em:maxVersion>1.*</em:maxVersion>
+      </Description>
+    </em:targetApplication>
+    
+	<!-- bluegriffon -->
+    <em:targetApplication> 
+      <Description>
+         <em:id>bluegriffon@disruptive-innovations.com</em:id>
+         <em:minVersion>0.1</em:minVersion>
+         <em:maxVersion>1.*</em:maxVersion>
+      </Description>
+    </em:targetApplication>
+
+    <!-- Sunbird -->
+    <em:targetApplication> 
+      <Description>
+        <em:id>{718e30fb-e89b-41dd-9da7-e25a45638b28}</em:id>
+        <em:minVersion>0.3</em:minVersion>
+        <em:maxVersion>5.0b2pre</em:maxVersion>
+      </Description>
+    </em:targetApplication>
+    		
+
+    <!-- instantbird -->
+    <em:targetApplication> 
+      <Description>
+        <em:id>{33cb9019-c295-46dd-be21-8c4936574bee}</em:id>
+        <em:minVersion>0.1</em:minVersion>
+        <em:maxVersion>1.*</em:maxVersion>
+      </Description>
+    </em:targetApplication>
+
+    <!-- Komodo Edit -->
+    <!--
+    <em:targetApplication>
+      <Description>
+        <em:id>{b1042fb5-9e9c-11db-b107-000d935d3368}</em:id>
+        <em:minVersion>4.0</em:minVersion>
+        <em:maxVersion>5.*</em:maxVersion>
+      </Description>
+    </em:targetApplication>
+    -->
+
+  <!--spicebird-->
+  <!--
+  <em:targetApplication>
+    <Description>
+      <em:id>{ee53ece0-255c-4cc6-8a7e-81a8b6e5ba2c}</em:id>
+      <em:minVersion>0.7</em:minVersion>
+      <em:maxVersion>1.0</em:maxVersion>
+    </Description>
+  </em:targetApplication>
+	-->	
+		
+		<!-- Postbox -->
+		<!--
+        <em:targetApplication>
+              
+	        <Description>
+		        <em:id>postbox@postbox-inc.com</em:id>
+		        <em:minVersion>1.0b13</em:minVersion>
+		        <em:maxVersion>3.*</em:maxVersion>
+	        </Description>
+        </em:targetApplication>
+		-->
+		
+    <!-- Packages, Skins and Locales that this extension registers -->
+    <em:file>
+      <Description about="urn:mozilla:extension:file:transliterator.jar">
+        <em:package>content/transliterator/</em:package>
+        <em:skin>skin/classic/transliterator/</em:skin>
+      </Description>
+    </em:file>
+    
+	</Description>
+</RDF>

@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<!--
+//TODO: prefwindow ?
+//TODO: mapping viewer
+//TODO: default labels per layout
+//TODO: locale 
+-->
+<dialog id="transliterator-prefs"
+        xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        title="Transliterator Options"
+        buttons="accept,cancel,extra1"
+        ondialogaccept="return onAccept();"
+        onload="onLoad();"
+        >
+    <script type="application/x-javascript" src="chrome://transliterator/content/prefs.js"/>
+
+    <groupbox>
+       <caption label="Layout"/>
+        <grid>
+            <rows>
+                <row/>
+            </rows>
+            <columns>
+                <column flex="1">
+			       <menulist id="layout-select" flex="1">
+			            <menupopup id="layout-select-popup"/>
+			        </menulist>
+                </column>
+                <column>
+                    <button label="View" oncommand="openViewer();" />
+                </column>
+            </columns>
+        </grid>
+    </groupbox>
+    <groupbox>
+        <caption label="Labels and Shortcuts"/>
+	    <grid flex="1" pack="center">
+	        <columns>
+	            <column />
+	            <column flex="1"/>
+	            <column flex="1"/>
+	        </columns>
+	        <rows>
+	            <row>
+	                <label/>
+	                <label value="Menu Label"/>
+	                <label value="Shortcut"/>
+	            </row>
+	            <row align="center">
+	                <label value="Detransliterate"/>
+	                <textbox id="fromtranslit-label"/>
+	                <textbox id="fromtranslit-shortcut" tooltiptext="Hit the desired shortcut keys in this field" onkeypress="shortcutKeyPress(event);"/>
+	            </row>
+	            <row align="center">
+	                <label value="Transliterate"/>
+	                <textbox id="totranslit-label"/>
+	                <textbox id="totranslit-shortcut" tooltiptext="Hit the desired shortcut keys in this field" onkeypress="shortcutKeyPress(event);"/>
+	            </row>
+	            <row align="center">
+	                <label value="Toggle Keyboard Mode"/>
+	                <textbox id="togglemode-label"/>
+	                <textbox id="togglemode-shortcut" tooltiptext="Hit the desired shortcut keys in this field" onkeypress="shortcutKeyPress(event);"/>
+	            </row>
+	        </rows>
+	    </grid>
+    </groupbox>
+</dialog>

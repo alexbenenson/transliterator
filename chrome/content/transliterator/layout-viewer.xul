@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+
+<!-- arguments:
+    description
+    map
+    case sensitivity
+-->
+<dialog id="transliterator-layout-viewer"
+        xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        title="View Layout"
+        buttons="accept"
+        onload="onLoad();">
+        <!--ondialogaccept="return onAccept();"-->
+        
+        <script type="application/x-javascript" src="chrome://transliterator/content/layout-viewer.js"/>
+
+        <label id="description" value="" style="font-weight: bold"/>
+        <label id="case-sensitivity" value="" />
+        <checkbox checked="false" id="inverse" label="Show inverse mapping" oncommand="setInverse()" />
+        
+        <listbox id="layoutGrid" flex="1" >
+            <listhead>
+                <listheader id="header-one" label="To get this"/>
+                <listheader id="header-two" label="Enter one of these"/>
+            </listhead>
+            
+            <listcols>
+                <listcol flex="1"/>
+                <listcol flex="2"/>
+            </listcols>
+            
+        </listbox>
+        <label id="underlined" value="Strings with spaces are underlined"/>
+</dialog>
