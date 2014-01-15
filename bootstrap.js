@@ -4,72 +4,44 @@
  * http://mozilla.org/MPL/2.0/.
  */
 
-const CLASS_ID = Components.ID("{6eda0bf0-8f9e-11db-b606-0800200c9a66}");
-const CLASS_NAME = "Transliterator Component";
-const CONTRACT_ID = "@benya.com/transliterator;1";
 const CC = Components.classes;
 const CI = Components.interfaces;
+const CU = Components.utils;
 
-var TransliteratorFactory = {
-createInstance: function (aOuter, aIID)
-  {
-    if (aOuter != null)
-      throw Components.results.NS_ERROR_NO_AGGREGATION;
-    return (new TransliteratorService()).QueryInterface(aIID);
-  }
-};
+CU.import("resource://gre/modules/Services.jsm");
 
-var TransliteratorModule = {
-  _firstTime: true,
-  registerSelf: function(aCompMgr, aFileSpec, aLocation, aType) {
-    if (this._firstTime)
-      this._firstTime = false;
-    else
-      throw Components.results.NS_ERROR_FACTORY_REGISTER_AGAIN;
+function startup(data, reason) {
+  // Set up default preferences
+  var defaultBranch = Services.prefs.getDefaultBranch("");
+  var scope = {
+    pref: function(pref, value) {
+      switch (typeof value) {
+        case "string":
+          TransliteratorService.setUnicodePref(pref, value, defaultBranch);
+          break;
+        case "boolean":
+          defaultBranch.setBoolPref(pref, value);
+          break;
+        default:
+          CU.reportError("Unknown value type in default preference " + pref);
+          break;
+      }
+    }
+  };
+  Services.scriptloader.loadSubScript(data.resourceURI.spec + "defaults/preferences/transliterator.js", scope, "utf-8");
 
-    aCompMgr = aCompMgr.QueryInterface(CI.nsIComponentRegistrar);
-    aCompMgr.registerFactoryLocation(CLASS_ID, CLASS_NAME, CONTRACT_ID, aFileSpec, aLocation, aType);
-
-    var catman = CC["@mozilla.org/categorymanager;1"].getService(CI.nsICategoryManager);
-    catman.addCategoryEntry("app-startup", CLASS_NAME, "service," + CONTRACT_ID, true, true);
-    //catman.addCategoryEntry("profile-after-change", CLASS_NAME, "service," + CONTRACT_ID, true, true);
-  },
-
-  unregisterSelf: function(aCompMgr, aLocation, aType) {
-
-
-    var catman = CC["@mozilla.org/categorymanager;1"].getService(CI.nsICategoryManager);
-    catman.deleteCategoryEntry("app-startup", CLASS_NAME, true);
-    //catman.deleteCategoryEntry("profile-after-change", CLASS_NAME, true);
-
-    aCompMgr = aCompMgr.QueryInterface(CI.nsIComponentRegistrar);
-    aCompMgr.unregisterFactoryLocation(CLASS_ID, aLocation);
-  },
-
-  getClassObject: function(aCompMgr, aCID, aIID) {
-    if (!aIID.equals(CI.nsIFactory))
-      throw Components.results.NS_ERROR_NOT_IMPLEMENTED;
-
-    if (aCID.equals(CLASS_ID))
-      return TransliteratorFactory;
-
-    throw Components.results.NS_ERROR_NO_INTERFACE;
-  },
-
-  canUnload: function(aCompMgr) { return true; }
+  // Now the usual initialization
+  TransliteratorService.init();
 }
 
-function NSGetModule(aCompMgr, aFileSpec) { return TransliteratorModule; }
-function NSGetFactory(contract) { return TransliteratorFactory; }
-
-function TransliteratorService() {
-    this.wrappedJSObject = this;
-    this.delegates = []; // list of adapters
-    this.init();
+function shutdown(data, reason) {
+  TransliteratorService.cleanup();
 }
 
-TransliteratorService.prototype = {
+function install(data, reason) {}
+function uninstall(data, reason) {}
 
+var TransliteratorService = {
   //method of nsISupports interface
   QueryInterface: function(aIID) {
     if (!aIID.equals(CI.nsISupports) && !aIID.equals(CI.nsIObserver) && !aIID.equals(CI.nsISupportsWeakReference) )
@@ -78,44 +50,41 @@ TransliteratorService.prototype = {
   },
 
   init: function() {
-      //init variables
-      this.prefsConverted = false;
-
-      // register observers
-      var obs = CC["@mozilla.org/observer-service;1"].getService(CI.nsIObserverService);
-      obs.addObserver(this, "quit-application", true);
-      obs.addObserver(this, "domwindowopened", true);
-      obs.addObserver(this, "domwindowclosed", true);
+    //init variables
+    this.delegates = []; // list of adapters
+    this.prefsConverted = false;
 
 
-      // attach to preferences
-      this.prefBranch =  Components.classes['@mozilla.org/preferences-service;1'].getService(CI.nsIPrefService).getBranch("extensions.transliterator.");
+    // attach to preferences
+    this.prefBranch =  Components.classes['@mozilla.org/preferences-service;1'].getService(CI.nsIPrefService).getBranch("extensions.transliterator.");
 
-      //install pref observer
-      this.prefObserver = new PrefObserver(this.prefBranch, this);
+    //install pref observer
+    this.prefObserver = new PrefObserver(this.prefBranch, this);
 
-      // create logger
-      this.consoleService = Components.classes["@mozilla.org/consoleservice;1"].getService(CI.nsIConsoleService);
+    // create logger
+    this.consoleService = Components.classes["@mozilla.org/consoleservice;1"].getService(CI.nsIConsoleService);
 
-      // find gecko version
-      try {
-        this.platformVersion = Components.classes["@mozilla.org/xre/app-info;1"].getService(Components.interfaces.nsIXULAppInfo).platformVersion.split(/[^0-9]*/);
-	    this.newGecko = parseInt(this.platformVersion[0]) > 1 || parseInt(this.platformVersion[1]) > 8;
-      } catch (e) {
-        this.newGecko = false;
-      }
+    // etc
+    //this.initEndPoints();
 
-      // etc
-      //this.initEndPoints();
+    // Attach to any windows already open
+    let enumerator = Services.ww.getWindowEnumerator();
+    while (enumerator.hasMoreElements())
+      this.attachToWindow(enumerator.getNext());
+
+    // register observers
+    var obs = CC["@mozilla.org/observer-service;1"].getService(CI.nsIObserverService);
+    obs.addObserver(this, "domwindowopened", true);
+    obs.addObserver(this, "domwindowclosed", true);
   },
 
   setUnicodePref: function (prefName,prefValue,prefBranch) {
-      if (!prefBranch)
-        prefBranch = this.prefBranch;
+    if (!prefBranch)
+      prefBranch = this.prefBranch;
 
-	  var sString = Components.classes["@mozilla.org/supports-string;1"].createInstance(Components.interfaces.nsISupportsString);
-	  sString.data = prefValue;
-	  prefBranch.setComplexValue(prefName,Components.interfaces.nsISupportsString,sString);
+    var sString = Components.classes["@mozilla.org/supports-string;1"].createInstance(Components.interfaces.nsISupportsString);
+    sString.data = prefValue;
+    prefBranch.setComplexValue(prefName,Components.interfaces.nsISupportsString,sString);
   },
 
   getUnicodePref: function (prefName, prefBranch) {
@@ -146,23 +115,21 @@ TransliteratorService.prototype = {
     }
   },
 
-  isNewGecko: function() {
-    return this.newGecko;
-  },
-
-  cleanup : function() {
-      // unregister observers
-      var obs = CC["@mozilla.org/observer-service;1"].getService(CI.nsIObserverService);
-      obs.removeObserver(this, "quit-application");
-      obs.removeObserver(this, "domwindowopened");
-      obs.removeObserver(this, "domwindowclosed");
+  cleanup: function() {
+    // unregister observers
+    var obs = CC["@mozilla.org/observer-service;1"].getService(CI.nsIObserverService);
+    obs.removeObserver(this, "domwindowopened");
+    obs.removeObserver(this, "domwindowclosed");
 
 
-      //detach from prefs
-      if (this.prefObserver)
-        this.prefObserver.unregister();
+    //detach from prefs
+    if (this.prefObserver)
+      this.prefObserver.unregister();
 
-      // etc
+    // detach from windows
+    for (var i = 0; i < this.delegates.length; i++)
+      this.delegates[i].detach();
+    // etc
   },
 
   debug : function(value) {
@@ -176,23 +143,16 @@ TransliteratorService.prototype = {
 
   // nsIObserver implementation
   observe: function(aSubject, aTopic, aData) {
-      if (aTopic == "app-startup") {
-      }
-      else if (aTopic == "quit-application") {
-          this.cleanup();
-      }
-      else if (aTopic == "domwindowopened") {
-          this.attachToWindow(aSubject);
-      }
-      else if (aTopic == "domwindowclosed") {
-          this.detachFromWindow(aSubject);
-      }
-
+    if (aTopic == "domwindowopened") {
+      this.attachToWindow(aSubject);
+    }
+    else if (aTopic == "domwindowclosed") {
+      this.detachFromWindow(aSubject);
+    }
   },
 
   attachToWindow: function(wnd) {
-      this.delegates.push(new TransliteratorWindowDelegate(this, wnd));
-
+    this.delegates.push(new TransliteratorWindowDelegate(this, wnd));
   },
 
   detachFromWindow: function(wnd) {
@@ -444,62 +404,28 @@ function TransliteratorWindowDelegate(service, wnd) {
     this.keys = [];
     this.keyset = null;
 
+    this.attach = this.attach.bind(this);
+    this.detach = this.detach.bind(this);
+    this.detachFromDocument = this.detachFromDocument.bind(this);
+
     this.init();
 }
 
 TransliteratorWindowDelegate.prototype = {
 
     init: function() {
-        var selfRef = this;
-        this.reconfTimeout = 0;
+      var selfRef = this;
+      this.reconfTimeout = 0;
 
 
-        this.executeReconfigureImpl = function() {
-            selfRef.reconfigureImpl();
-	    },
+      this.executeReconfigureImpl = function() {
+        selfRef.reconfigureImpl();
+      };
 
-        this.loadListeners = [function(event) {
-          event.target.defaultView.transliterator = selfRef;
-          selfRef.attach();
-          var gB = event.target.gBrowser || event.target.defaultView.gBrowser;
-            if (gB) {
-                //selfRef.getService().debug("found gBrowser!");
-                gB.addEventListener("unload", selfRef.unloadListeners[1], true);
-            }
-            else {
-                //selfRef.getService().debug("gBrowser not found");
-            }
-
-        }];
-
-        this.unloadListeners = [
-            function(event) {
-
-	            if (event.currentTarget == selfRef.getWindow()) {
-	                selfRef.detach();
-	                //selfRef.getService().log(event.currentTarget + " " + event.eventPhase);
-	            }
-                //delete event.target.defaultView.transliterator;
-            },
-	        function(event) {
-	            // trying to catch documents unloading - will work only some of the time :(
-	            if (/*event.eventPhase == 1 &&*/
-	                (event.originalTarget.documentElement ||
-	                (event.originalTarget.wrappedJSObject && event.originalTarget.wrappedJSObject.documentElement)
-	                )) {
-                    //selfRef.getService().debug("calling removeMappingStates")
-
-	                if (selfRef.removeMappingStates)
-	                   selfRef.removeMappingStates(event.originalTarget);
-                }
-	        }
-        ];
-
-        this._window.addEventListener("load", this.loadListeners[0], false);
-        this._window.addEventListener("unload", this.unloadListeners[0], false);
-        this._window.addEventListener("unload", this.unloadListeners[1], true);
-
-
+      if (this._window.document.readyState == "complete")
+        this.attach();
+      else
+        this._window.addEventListener("load", this.attach, false);
     },
 
     getEndPoint: function(cmd) {
@@ -545,7 +471,7 @@ TransliteratorWindowDelegate.prototype = {
         this._endPoints = this.getService().getEndPoints();
         this.endPointMap = new Object();
         for (var i = 0; i < this.getEndPoints().length; i++)
-        	this.endPointMap[this.getEndPoints()[i].commandKey] = this.getEndPoints()[i];
+          this.endPointMap[this.getEndPoints()[i].commandKey] = this.getEndPoints()[i];
 
     },
 
@@ -563,40 +489,58 @@ TransliteratorWindowDelegate.prototype = {
     },
 
     attach: function() {
-        // get end points from the service
-        this.setupEndPoints();
+      this._window.transliterator = this;
+
+      // Window already loaded, remove listener
+      this._window.removeEventListener("load", this.attach, false);
+
+      // Add event listeners
+      this._window.addEventListener("unload", this.detach, false);
+      this._window.addEventListener("unload", this.detachFromDocument, true);
+      if (this._window.gBrowser) {
+        // Try to get notified when content documents unload (doesn't work reliably)
+        this._window.gBrowser.addEventListener("unload", this.detachFromDocument, true);
+      }
+
+      // get end points from the service
+      this.setupEndPoints();
 
 
-        // create commands
-    	this.addCommands();
+      // create commands
+      this.addCommands();
 
-        // create shortcuts
-        // do it before menu items so menus can have linked shortcuts
-        this.addShortcuts();
+      // create shortcuts
+      // do it before menu items so menus can have linked shortcuts
+      this.addShortcuts();
 
-        // create menuitems &  attach popup listeners to appropriate menus
-        this.addMenus();
-
-
-        // add options menuitem
-        this.addOptionsMenu();
-
-        // create status bar notifier?
+      // create menuitems &  attach popup listeners to appropriate menus
+      this.addMenus();
 
 
+      // add options menuitem
+      this.addOptionsMenu();
+
+      // create status bar notifier?
     },
 
     detach: function() {
-        this.removeDynamicNodes();
-        this.removeMappingStates(null);
-        if (this._window && this._window.gBrowser)
-            this._window.gBrowser.removeEventListener("unload", this.unloadListeners[1], true);
+      delete this._window.transliterator;
 
-        /*
-        this._window.removeEventListener(this.loadListeners[0], "load", false);
-        this._window.removeEventListener(this.unloadListeners[0], "unload", false);
-        this._window.removeEventListener(this.unloadListeners[1], "unload", true);
-        */
+      this._window.removeEventListener("unload", this.detach, false);
+      this._window.removeEventListener("unload", this.detachFromDocument, true);
+      if (this._window.gBrowser)
+        this._window.gBrowser.removeEventListener("unload", this.detachFromDocument, true);
+
+      this.removeDynamicNodes();
+      this.removeMappingStates(null);
+    },
+
+    detachFromDocument: function(event) {
+      var doc = event.originalTarget;
+      if (doc.ownerDocument)
+        doc = doc.ownerDocument;
+      if (doc instanceof CI.nsIDOMDocument)
+        this.removeMappingStates(doc);
     },
 
     removeMappingStates: function (doc) {
@@ -624,35 +568,23 @@ TransliteratorWindowDelegate.prototype = {
     },
 
     removeDynamicNodes: function() {
-        for (var i = this._createdElements.length - 1; i >= 0; i--) {
-            var element = this._createdElements[i];
-            if (element.getAttribute("key"))
-                element.removeAttribute("key");
-            if (element.getAttribute("keycode"))
-                element.removeAttribute("keycode");
-                /*
-            if (this._createdElements[i].tagName == "key") {
-                // need to remove the key & keycode, otherwise this deleted key interferes with any keys with the same keystrokes added in the future
-                this._createdElements[i].removeAttribute("key");
-                this._createdElements[i].removeAttribute("keycode");
-            }
-            */
+      for (var i = this._createdElements.length - 1; i >= 0; i--) {
+        var element = this._createdElements[i];
+        var p = element.parentNode;
+        if (p)
+          p.removeChild(element);
+      }
+      this._createdElements = [];
 
-            var p = this._createdElements[i].parentNode;
-            if (p)
-                p.removeChild(this._createdElements[i]);
-        }
-        this._createdElements = [];
-
-        for (var i = 0; i < this._createdListeners.length; i++) {
-            var l = this._createdListeners[i];
-            l.element.removeEventListener(l.eventType, l.listener, l.capture);
-        }
-        this._createdListeners = [];
+      for (var i = 0; i < this._createdListeners.length; i++) {
+        var l = this._createdListeners[i];
+        l.element.removeEventListener(l.eventType, l.listener, l.capture);
+      }
+      this._createdListeners = [];
     },
 
     addNode: function(node) {
-		this._createdElements.push(node);
+      this._createdElements.push(node);
     },
 
     addListener: function (element, eventType, listener, capture) {
@@ -661,31 +593,31 @@ TransliteratorWindowDelegate.prototype = {
     },
 
     addCommand: function(id, label, command, commandset) {
-    	var doc = this.getWindow().document;
+      var doc = this.getWindow().document;
 
-    	var cmd = doc.createElement("command");
-    	this.addNode(cmd);
-    	commandset.appendChild(cmd);
-    	cmd.id=id;
-    	cmd.setAttribute("oncommand",  command);
-    	cmd.setAttribute("label",  label);
+      var cmd = doc.createElement("command");
+      this.addNode(cmd);
+      commandset.appendChild(cmd);
+      cmd.id=id;
+      cmd.setAttribute("oncommand",  command);
+      cmd.setAttribute("label",  label);
     },
 
     addCommands: function() {
-    	//this.getService().debug(this.getWindow());
-    	var doc = this.getWindow().document;
-    	// find window to insert to
-    	var element = doc.firstChild;
-    	while (element && element.tagName != "window" && element.tagName != "dialog")
-    		element = element.nextSibling;
-    	if (!element)
-    		return;
+      //this.getService().debug(this.getWindow());
+      var doc = this.getWindow().document;
+      // find window to insert to
+      var element = doc.firstChild;
+      while (element && element.tagName != "window" && element.tagName != "dialog")
+        element = element.nextSibling;
+      if (!element)
+        return;
 
-    	var cmdSet = doc.createElement("commandset");
-    	this.addNode(cmdSet);
-    	element.appendChild(cmdSet);
-    	//doc.firstChild.appendChild(cmdSet);
-    	cmdSet.id="transliterator_commandset"
+      var cmdSet = doc.createElement("commandset");
+      this.addNode(cmdSet);
+      element.appendChild(cmdSet);
+      //doc.firstChild.appendChild(cmdSet);
+      cmdSet.id="transliterator_commandset"
 
         var endPoints = this.getEndPoints();
 
@@ -700,15 +632,9 @@ TransliteratorWindowDelegate.prototype = {
 
         // get or create keyset
         if (!this.keyset) {
-	        var kss = doc.getElementsByTagName("keyset");
-	        if (kss.length > 0) {
-	            this.keyset = kss.item(0);
-	        }
-	        else {
-	            this.keyset = doc.createElement("keyset");
-	            //this.addNode(keyset);
-	            doc.documentElement.appendChild(this.keyset);
-	        }
+          this.keyset = doc.createElement("keyset");
+          doc.documentElement.appendChild(this.keyset);
+          this.addNode(this.keyset);
         }
 
         var endPoints = this.getEndPoints();
@@ -794,38 +720,38 @@ TransliteratorWindowDelegate.prototype = {
         var win = this.getWindow();
         var doc = win.document;
         var markers = new Array();
-		// searching for //menuitem, but using //* to avoid having to deal with namespace resolvers
+    // searching for //menuitem, but using //* to avoid having to deal with namespace resolvers
         // or (translate(@command, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")="cmd_editcopy")
         if (doc.evaluate) {
 
-			var items = doc.evaluate('//xul:menuitem[translate(@command, "ABCDEFGHIJKLMNOPQRSTUVWXYZ-_", "abcdefghijklmnopqrstuvwxyz")="cmdcopy" ' +
-					                 'or translate(@command, "ABCDEFGHIJKLMNOPQRSTUVWXYZ-_", "abcdefghijklmnopqrstuvwxyz")="cmdeditcopy"]',
-					    doc, function(prefix) {
-							var ns = {
-									"xbl" : "http://www.mozilla.org/xbl",
-									"xul" : "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-							}
-							return ns[prefix];
-						}, win.XPathResult.ANY_TYPE, null );
+      var items = doc.evaluate('//xul:menuitem[translate(@command, "ABCDEFGHIJKLMNOPQRSTUVWXYZ-_", "abcdefghijklmnopqrstuvwxyz")="cmdcopy" ' +
+                           'or translate(@command, "ABCDEFGHIJKLMNOPQRSTUVWXYZ-_", "abcdefghijklmnopqrstuvwxyz")="cmdeditcopy"]',
+              doc, function(prefix) {
+              var ns = {
+                  "xbl" : "http://www.mozilla.org/xbl",
+                  "xul" : "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+              }
+              return ns[prefix];
+            }, win.XPathResult.ANY_TYPE, null );
 
-			/*
-			 	function(prefix) {
-					var ns = {
-							"xbl" : "http://www.mozilla.org/xbl",
-							"xul" : "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-					}
-					return ns[prefix];
-				}
-			 */
+      /*
+        function(prefix) {
+          var ns = {
+              "xbl" : "http://www.mozilla.org/xbl",
+              "xul" : "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+          }
+          return ns[prefix];
+        }
+       */
 
-			// get all results into an array so that dom mods don't affect the iterator
-			var item = items.iterateNext();
-			while (item) {
-				this.getService().debug("item: " + item.nodeName);
-				if (item.tagName == "menuitem")
-					markers.push(item);
-			  	item = items.iterateNext();
-			}
+      // get all results into an array so that dom mods don't affect the iterator
+      var item = items.iterateNext();
+      while (item) {
+        this.getService().debug("item: " + item.nodeName);
+        if (item.tagName == "menuitem")
+          markers.push(item);
+          item = items.iterateNext();
+      }
         }
 
         if (markers.length == 0) {
@@ -853,16 +779,16 @@ TransliteratorWindowDelegate.prototype = {
         /*
          // failed attempt to get xbl anonymous nodes
         {
-        	var items = doc.getAnonymousNodes(doc.documentElement);
+          var items = doc.getAnonymousNodes(doc.documentElement);
             if (items)
-            	for (var i = 0; i < items.length; i++) {
-            		var item = doc.getElementByAttribute(items[i], "cmd", "cmd_copy");
-            		if (item) {
-            			this.getService().debug("item: " + item.nodeName);
-            			if (item.tagName == "menuitem")
-            				markers.push(items[i]);
-            		}
-            	}
+              for (var i = 0; i < items.length; i++) {
+                var item = doc.getElementByAttribute(items[i], "cmd", "cmd_copy");
+                if (item) {
+                  this.getService().debug("item: " + item.nodeName);
+                  if (item.tagName == "menuitem")
+                    markers.push(items[i]);
+                }
+              }
 
         }
         */
@@ -870,21 +796,21 @@ TransliteratorWindowDelegate.prototype = {
         var this_ = this;
 
         // add menu items
-		for (var i = 0; i < markers.length; i++) {
-			var marker = markers[i];
+    for (var i = 0; i < markers.length; i++) {
+      var marker = markers[i];
 
             // find the popup or menupopup (most likely an ancestor of marker)
             var popup = marker;
-		  	var itemParent = marker.parentNode;
-		  	while (popup && popup.tagName != "popup" && popup.tagName != "menupopup" ) {
-				popup = popup.parentNode;
-		  	}
+        var itemParent = marker.parentNode;
+        while (popup && popup.tagName != "popup" && popup.tagName != "menupopup" ) {
+        popup = popup.parentNode;
+        }
 
 
             //add separator & menu items
-		  	var sep = doc.createElement("menuseparator");
-		  	this.addNode(sep);
-	  		itemParent.appendChild(sep);
+        var sep = doc.createElement("menuseparator");
+        this.addNode(sep);
+        itemParent.appendChild(sep);
             sep.setAttribute("id", "sep-transliterator");
             sep.setAttribute("hidden", true);
 
@@ -898,7 +824,7 @@ TransliteratorWindowDelegate.prototype = {
                 mi.setAttribute("hidden", true);
 
                 if (endPoints[j].actionType == EndPoint.MAP)
-					mi.setAttribute("type", "checkbox");
+          mi.setAttribute("type", "checkbox");
 
                 itemParent.appendChild(mi);
             }
@@ -943,18 +869,18 @@ TransliteratorWindowDelegate.prototype = {
                     if (endPoint.actionType == EndPoint.MAP) {
                         menuItem.setAttribute("hidden", !node);
                         if (node) {
-	                        visibleMenuItems ++;
+                          visibleMenuItems ++;
                             var state = this_.getMappingState(node);
                             var toggled = (state && state.key == cmd);
-	                        //var toggled = (this_.mappingStates[node] && this_.mappingStates[node].key == cmd);
-	                        menuItem.setAttribute("checked", toggled);
+                          //var toggled = (this_.mappingStates[node] && this_.mappingStates[node].key == cmd);
+                          menuItem.setAttribute("checked", toggled);
                         }
                     }
                     else if (endPoint.actionType == EndPoint.BATCH) {
-	                    if (node || !isSelectionEmpty)
-	                        visibleMenuItems ++;
+                      if (node || !isSelectionEmpty)
+                          visibleMenuItems ++;
 
-	                    menuItem.setAttribute("hidden", !node && isSelectionEmpty);
+                      menuItem.setAttribute("hidden", !node && isSelectionEmpty);
                     }
                     else {
                         menuItem.setAttribute("hidden", false);
@@ -968,7 +894,7 @@ TransliteratorWindowDelegate.prototype = {
 
             this.addListener(popup, "popupshowing", popupHandler, false);
 
-		}
+    }
     },
 
 
@@ -999,18 +925,18 @@ TransliteratorWindowDelegate.prototype = {
     },
 
     batchConvert: function(converter) {
-	  var node = this.getActiveNode();
-	  if (node != null || !this.isSelectionEmpty(this.getSelection(null))) {
-	    if (node == null || this.isNodeEditor(node)) {
-	        this.convertSelection(this.getSelection(node), converter);
-	    }
-	    else {
-	        var str = node.value.substring(node.selectionStart, node.selectionEnd);
-	        str = converter.convertSkipMarkup(str);
-	        this.replaceValue(node, str);
-	    }
+    var node = this.getActiveNode();
+    if (node != null || !this.isSelectionEmpty(this.getSelection(null))) {
+      if (node == null || this.isNodeEditor(node)) {
+          this.convertSelection(this.getSelection(node), converter);
+      }
+      else {
+          var str = node.value.substring(node.selectionStart, node.selectionEnd);
+          str = converter.convertSkipMarkup(str);
+          this.replaceValue(node, str);
+      }
 
-	  }
+    }
 
     },
 
@@ -1047,65 +973,65 @@ TransliteratorWindowDelegate.prototype = {
     },
 
 
-	// get selection (in document or text field or rich editor)
-	getSelection: function (node) {
-	  var document = this.getWindow().document;
-	  if (node == null) {
-		if (document.commandDispatcher.focusedWindow &&	document.commandDispatcher.focusedWindow.getSelection) {
-			return document.commandDispatcher.focusedWindow.getSelection();
-		}
-		else
-			return null;
-	  }
-	  else {
-		  return node.getSelection ? node.getSelection() : node.ownerDocument.defaultView.getSelection();//node.contentWindow.getSelection();
-	  }
-	},
+  // get selection (in document or text field or rich editor)
+  getSelection: function (node) {
+    var document = this.getWindow().document;
+    if (node == null) {
+    if (document.commandDispatcher.focusedWindow && document.commandDispatcher.focusedWindow.getSelection) {
+      return document.commandDispatcher.focusedWindow.getSelection();
+    }
+    else
+      return null;
+    }
+    else {
+      return node.getSelection ? node.getSelection() : node.ownerDocument.defaultView.getSelection();//node.contentWindow.getSelection();
+    }
+  },
 
-	isSelectionEmpty: function(selection) {
-		return (selection == undefined || selection == null || selection.toString() == "");
-	},
+  isSelectionEmpty: function(selection) {
+    return (selection == undefined || selection == null || selection.toString() == "");
+  },
 
-	collapseSelection: function() {
-		var node = this.getActiveNode();
-		if (node != null || !this.isSelectionEmpty(this.getSelection(null))) {
-			if (node == null || this.isNodeEditor(node)) {
-				this.getSelection(node).collapseToEnd();
-			}
-		}
-	},
-
-
-	convertSelection: function(selection, converter) {
-		if (selection == null) return;
-		for(var i = 0; i < selection.rangeCount; i++) {
-			new RangeConverter(selection.getRangeAt(i), converter).convertNode(selection.getRangeAt(i).commonAncestorContainer);
-		}
-
-		// calling selection.collapseToEnd() causes a crash when selection ends at is at the end of a text node
-		// however, with a timeout it seems to work.
-		var this_ = this;
-		this.getWindow().setTimeout(function() {this_.collapseSelection()}, 20);
-
-	},
+  collapseSelection: function() {
+    var node = this.getActiveNode();
+    if (node != null || !this.isSelectionEmpty(this.getSelection(null))) {
+      if (node == null || this.isNodeEditor(node)) {
+        this.getSelection(node).collapseToEnd();
+      }
+    }
+  },
 
 
-	replaceValue: function(node, value) {
-		if (this.isNodeEditor(node)) {
-			return; // we don't do that!
-		}
-		else {
-			var scrollTop = node.scrollTop;
-			var cursorLoc =  node.selectionStart;
-			node.value = node.value.substring(0, node.selectionStart) + value +
-	                node.value.substring(node.selectionEnd, node.value.length);
-			node.scrollTop = scrollTop;
-			node.selectionStart = cursorLoc + value.length;
-			node.selectionEnd = cursorLoc + value.length;
-		}
-	},
+  convertSelection: function(selection, converter) {
+    if (selection == null) return;
+    for(var i = 0; i < selection.rangeCount; i++) {
+      new RangeConverter(selection.getRangeAt(i), converter).convertNode(selection.getRangeAt(i).commonAncestorContainer);
+    }
 
-	checkContentEditable: function(node) {
+    // calling selection.collapseToEnd() causes a crash when selection ends at is at the end of a text node
+    // however, with a timeout it seems to work.
+    var this_ = this;
+    this.getWindow().setTimeout(function() {this_.collapseSelection()}, 20);
+
+  },
+
+
+  replaceValue: function(node, value) {
+    if (this.isNodeEditor(node)) {
+      return; // we don't do that!
+    }
+    else {
+      var scrollTop = node.scrollTop;
+      var cursorLoc =  node.selectionStart;
+      node.value = node.value.substring(0, node.selectionStart) + value +
+                  node.value.substring(node.selectionEnd, node.value.length);
+      node.scrollTop = scrollTop;
+      node.selectionStart = cursorLoc + value.length;
+      node.selectionEnd = cursorLoc + value.length;
+    }
+  },
+
+  checkContentEditable: function(node) {
         if (!node.contentEditable)
             return false;
         if (typeof(node.contentEditable) == "string")
@@ -1113,26 +1039,26 @@ TransliteratorWindowDelegate.prototype = {
         return node.contentEditable == true;
     },
 
-	// get the current focused node - text field or rich text editor
-	getActiveNode: function () {
-	    var document = this.getWindow().document;
-	    var node = document.commandDispatcher.focusedElement;
+  // get the current focused node - text field or rich text editor
+  getActiveNode: function () {
+      var document = this.getWindow().document;
+      var node = document.commandDispatcher.focusedElement;
 
-	    if (!node) {
-			if (document.commandDispatcher.focusedWindow) {
+      if (!node) {
+      if (document.commandDispatcher.focusedWindow) {
 
-				if (document.commandDispatcher.focusedWindow.document ) {
+        if (document.commandDispatcher.focusedWindow.document ) {
                     //return document.commandDispatcher.focusedWindow.document.documentElement;
 
                     if (document.commandDispatcher.focusedWindow.document.designMode == "on")
                         return document.commandDispatcher.focusedWindow.document.documentElement;
 
                     // for thunderbird, nvu, etc
-					var editors = document.getElementsByTagName("editor");
-					for (var i = 0; i < editors.length; i++)
-						if (editors[i].contentWindow == document.commandDispatcher.focusedWindow)
-							//return editors[i];
-				            return editors[i].contentDocument.documentElement;
+          var editors = document.getElementsByTagName("editor");
+          for (var i = 0; i < editors.length; i++)
+            if (editors[i].contentWindow == document.commandDispatcher.focusedWindow)
+              //return editors[i];
+                    return editors[i].contentDocument.documentElement;
 
                     // for nvu
                     var tabedit = document.getElementById("tabeditor");
@@ -1142,56 +1068,56 @@ TransliteratorWindowDelegate.prototype = {
                             return eelement.contentDocument.documentElement;
                         }
                     }
-					//return document.commandDispatcher.focusedWindow;
+          //return document.commandDispatcher.focusedWindow;
 
-				}
+        }
 
-				if (document.commandDispatcher.focusedWindow.frameElement &&
-				    document.commandDispatcher.focusedWindow.frameElement.contentDocument &&
-				    document.commandDispatcher.focusedWindow.frameElement.contentDocument.designMode == "on")
-				    //return document.commandDispatcher.focusedWindow.frameElement; // midas rich text editor in an iframe
-				    return document.commandDispatcher.focusedWindow.frameElement.contentDocument.documentElement;
-			}
+        if (document.commandDispatcher.focusedWindow.frameElement &&
+            document.commandDispatcher.focusedWindow.frameElement.contentDocument &&
+            document.commandDispatcher.focusedWindow.frameElement.contentDocument.designMode == "on")
+            //return document.commandDispatcher.focusedWindow.frameElement; // midas rich text editor in an iframe
+            return document.commandDispatcher.focusedWindow.frameElement.contentDocument.documentElement;
+      }
 
-	    } else {
+      } else {
             if (node == node.ownerDocument.documentElement && node.ownerDocument.designMode == "on")
                 return node;
 
 
-	        if (this.checkContentEditable(node))
+          if (this.checkContentEditable(node))
                 return node;
 
-			var nodeLocalName = node.localName.toLocaleUpperCase();
+      var nodeLocalName = node.localName.toLocaleUpperCase();
 
-			if ((nodeLocalName == "TEXTAREA") || (nodeLocalName == "INPUT" && (node.type == "text" || node.type == "file")) || nodeLocalName == "TEXTBOX") {
-				if (!(node.disabled || node.readOnly))
-					return node;
-			}
+      if ((nodeLocalName == "TEXTAREA") || (nodeLocalName == "INPUT" && (node.type == "text" || node.type == "file")) || nodeLocalName == "TEXTBOX") {
+        if (!(node.disabled || node.readOnly))
+          return node;
+      }
 
-		}
-		return null;
-	},
+    }
+    return null;
+  },
 
-	isNodeEditor: function (node) {
-	  return node == node.ownerDocument.documentElement || this.checkContentEditable(node);// node.tagName == "HTML";//((node.getEditor != undefined) || (node.contentDocument != undefined));
-	},
-	// get up to count characters from node before offset
-	getBackBuffer : function (node, offset, count) {
-		if (this.isNodeEditor(node)) { //.tagName.toLocaleUpperCase() == "EDITOR") {
-			var selection = this.getSelection(node);
+  isNodeEditor: function (node) {
+    return node == node.ownerDocument.documentElement || this.checkContentEditable(node);// node.tagName == "HTML";//((node.getEditor != undefined) || (node.contentDocument != undefined));
+  },
+  // get up to count characters from node before offset
+  getBackBuffer : function (node, offset, count) {
+    if (this.isNodeEditor(node)) { //.tagName.toLocaleUpperCase() == "EDITOR") {
+      var selection = this.getSelection(node);
 
-			if (!selection.focusNode.nodeValue)
-				return "";
+      if (!selection.focusNode.nodeValue)
+        return "";
 
-			var result = selection.focusNode.nodeValue.substr(0, selection.focusOffset - offset).substr(-count);
-			if (!result)
-				result = "";
+      var result = selection.focusNode.nodeValue.substr(0, selection.focusOffset - offset).substr(-count);
+      if (!result)
+        result = "";
 
-			return result;
-		} else {
-			return node.value.substring(0, node.selectionStart - offset).substr(-count);
-		}
-	},
+      return result;
+    } else {
+      return node.value.substring(0, node.selectionStart - offset).substr(-count);
+    }
+  },
 
     keypressMappingHandler: function(event) {
 
@@ -1202,76 +1128,76 @@ TransliteratorWindowDelegate.prototype = {
 
             // for some reason the editor won't process the event without this (at least as of ff2.0)
             // as if the event is not properly initialized until accessed
-	        if (event.target.nodeName == "HTML") {
-	            var arr = [];
-	            for (var i in event) {
-	                if (("" + i) != ("" + i).toUpperCase()) {
-	                    arr.push(i + " = " + event[i] + "\n");
-	                }
-	            }
+          if (event.target.nodeName == "HTML") {
+              var arr = [];
+              for (var i in event) {
+                  if (("" + i) != ("" + i).toUpperCase()) {
+                      arr.push(i + " = " + event[i] + "\n");
+                  }
+              }
                         //this.getService().debug(s);
-	        }
+          }
 
-	      return true;
-	    }
+        return true;
+      }
 
         var node = this.getActiveNode();
         if (!node)
             return;
 
 
-	    // initialize state
-	    //var state = this.mappingStates[node];
+      // initialize state
+      //var state = this.mappingStates[node];
         state = this.getMappingState(node);
-	    if (!state) {
-	        throw "MappingState for current node not found";
+      if (!state) {
+          throw "MappingState for current node not found";
             return; // redundant
-	    }
+      }
 
         // ignore if no charCode (e.g. arrows) or if modifiers are pressed
-	    if (event.charCode > 0 && !event.ctrlKey && !event.altKey && !event.metaKey) {
-	        //logMessage("event.which: " + event.which + ", event.keyCode = " + event.keyCode + ", event.charCode = " + event.charCode);
-	        var c = String.fromCharCode(event.charCode);
+      if (event.charCode > 0 && !event.ctrlKey && !event.altKey && !event.metaKey) {
+          //logMessage("event.which: " + event.which + ", event.keyCode = " + event.keyCode + ", event.charCode = " + event.charCode);
+          var c = String.fromCharCode(event.charCode);
 
-	        // process input
+          // process input
             var endPoint = this.getEndPoint(state.key);
             if (!endPoint)
                 return;
 
             var result = endPoint.converter.processNextChar(this, state, c);
 
-	        // finish up
+          // finish up
             event.preventDefault();
 
             var tosend = new Array(result.replace + result.out.length);
-	        for (var i = 0; i < result.replace; i++)
-	            tosend[i] = 8; // send backspace for all those that need to be removed
-	        for(var i = result.replace; i < tosend.length; i++)
-	            tosend[i] = result.out.charCodeAt(i - result.replace); // send new characters
+          for (var i = 0; i < result.replace; i++)
+              tosend[i] = 8; // send backspace for all those that need to be removed
+          for(var i = result.replace; i < tosend.length; i++)
+              tosend[i] = result.out.charCodeAt(i - result.replace); // send new characters
 
 
 
             for (var i = 0; i < tosend.length; i++) {
-	            //var evt = this.getWindow().document.createEvent("KeyboardEvent");
+              //var evt = this.getWindow().document.createEvent("KeyboardEvent");
                     var evt = event.target.ownerDocument.createEvent("KeyEvents");
 
-	            if (tosend[i] == 8)
-	                evt.initKeyEvent(event.type, true, event.cancelable, null, false, false, false, false, 8, 0);
-	            else
-	                // use keyCode 255 as an indicator that the event should be ignored
-	                evt.initKeyEvent(event.type, true, event.cancelable, null, false, false, false, false, 255, tosend[i]);
+              if (tosend[i] == 8)
+                  evt.initKeyEvent(event.type, true, event.cancelable, null, false, false, false, false, 8, 0);
+              else
+                  // use keyCode 255 as an indicator that the event should be ignored
+                  evt.initKeyEvent(event.type, true, event.cancelable, null, false, false, false, false, 255, tosend[i]);
 
-	            // handling of rich text editor is different in 1.9+
-	            if (event.target == event.target.ownerDocument.documentElement && this.getService().isNewGecko()) // (event.target.tagName == "HTML" || (event.target.contentEditable == true)) && this.getService().isNewGecko())
-	                event.target.ownerDocument.dispatchEvent(evt);
-	            else
+              // handling of rich text editor is different in 1.9+
+              if (event.target == event.target.ownerDocument.documentElement && this.getService().isNewGecko()) // (event.target.tagName == "HTML" || (event.target.contentEditable == true)) && this.getService().isNewGecko())
+                  event.target.ownerDocument.dispatchEvent(evt);
+              else
                         event.target.dispatchEvent(evt);
 
             }
 
-	        state.position = new MappingPosition(node);
+          state.position = new MappingPosition(node);
 
-	    }
+      }
 
     }
 
@@ -1280,127 +1206,127 @@ TransliteratorWindowDelegate.prototype = {
 
 
 function RangeConverter(range, converter) {
-	this.range = range;
-	this.converter = converter;
-	this.started = false;
-	this.finished = false;
-	/*
-	this.toString = function() {
-		return "started : " + this.started + ", finished: " + this.finished;
-	};
-	*/
+  this.range = range;
+  this.converter = converter;
+  this.started = false;
+  this.finished = false;
+  /*
+  this.toString = function() {
+    return "started : " + this.started + ", finished: " + this.finished;
+  };
+  */
 }
 
 RangeConverter.prototype = {
-	convertNode : function(node) {
-		if (this.started && this.finished)
-			return;
+  convertNode : function(node) {
+    if (this.started && this.finished)
+      return;
 
-		if (!this.started &&
-			( ( (this.range.startContainer.nodeType == node.TEXT_NODE ||
-				 this.range.startContainer.nodeType == node.PROCESSING_INSTRUCTION_NODE ||
-				 this.range.startContainer.nodeType == node.COMMENT_NODE	)
-			    && node == this.range.startContainer)
-				||
-			  ( this.range.startContainer.childNodes && node == this.range.startContainer.childNodes[this.range.startOffset])
-			))
-			this.started = true;
+    if (!this.started &&
+      ( ( (this.range.startContainer.nodeType == node.TEXT_NODE ||
+         this.range.startContainer.nodeType == node.PROCESSING_INSTRUCTION_NODE ||
+         this.range.startContainer.nodeType == node.COMMENT_NODE  )
+          && node == this.range.startContainer)
+        ||
+        ( this.range.startContainer.childNodes && node == this.range.startContainer.childNodes[this.range.startOffset])
+      ))
+      this.started = true;
 
-		if (node.nodeType == node.TEXT_NODE || node.nodeType == node.PROCESSING_INSTRUCTION_NODE || node.nodeType == node.COMMENT_NODE) {
-			if (this.started && !this.finished) {
-				// convert text
-				var start = (node == this.range.startContainer) ? this.range.startOffset : 0;
-				var end   = (node == this.range.endContainer) ? this.range.endOffset : node.nodeValue.length;
-				var remainder = (node == this.range.endContainer) ? node.nodeValue.length - this.range.endOffset : 0;
-				var convertedValue = node.nodeValue.substring(0, start) + this.converter.convert_string(node.nodeValue.substring(start, end)) + node.nodeValue.substr(end);
+    if (node.nodeType == node.TEXT_NODE || node.nodeType == node.PROCESSING_INSTRUCTION_NODE || node.nodeType == node.COMMENT_NODE) {
+      if (this.started && !this.finished) {
+        // convert text
+        var start = (node == this.range.startContainer) ? this.range.startOffset : 0;
+        var end   = (node == this.range.endContainer) ? this.range.endOffset : node.nodeValue.length;
+        var remainder = (node == this.range.endContainer) ? node.nodeValue.length - this.range.endOffset : 0;
+        var convertedValue = node.nodeValue.substring(0, start) + this.converter.convert_string(node.nodeValue.substring(start, end)) + node.nodeValue.substr(end);
 
-				node.nodeValue = convertedValue;
+        node.nodeValue = convertedValue;
 
-				if (node == this.range.endContainer) {
-					this.range.setEnd(node, node.nodeValue.length - remainder);
-				}
-				if (node == this.range.startContainer) {
-					this.range.setStart(node, start);
-				}
-			}
-		}
-		else if (node.childNodes)
-			// walk the tree
-			for (var i = 0; i < node.childNodes.length; i++) {
-				this.convertNode(node.childNodes[i]);
-				if (this.started && this.finished)
-					break;
-			}
+        if (node == this.range.endContainer) {
+          this.range.setEnd(node, node.nodeValue.length - remainder);
+        }
+        if (node == this.range.startContainer) {
+          this.range.setStart(node, start);
+        }
+      }
+    }
+    else if (node.childNodes)
+      // walk the tree
+      for (var i = 0; i < node.childNodes.length; i++) {
+        this.convertNode(node.childNodes[i]);
+        if (this.started && this.finished)
+          break;
+      }
 
-		if (!this.finished &&
-			( ((this.range.endContainer.nodeType == node.TEXT_NODE ||
-				 this.range.endContainer.nodeType == node.PROCESSING_INSTRUCTION_NODE ||
-				 this.range.endContainer.nodeType == node.COMMENT_NODE	)
-			     && node == this.range.endContainer)
-				||
-			  ( (this.range.endContainer.childNodes.length > 0) && node == this.range.endContainer.childNodes[this.range.endOffset - 1])
-			))
-			this.finished = true;
+    if (!this.finished &&
+      ( ((this.range.endContainer.nodeType == node.TEXT_NODE ||
+         this.range.endContainer.nodeType == node.PROCESSING_INSTRUCTION_NODE ||
+         this.range.endContainer.nodeType == node.COMMENT_NODE  )
+           && node == this.range.endContainer)
+        ||
+        ( (this.range.endContainer.childNodes.length > 0) && node == this.range.endContainer.childNodes[this.range.endOffset - 1])
+      ))
+      this.finished = true;
 
-	}
+  }
 } // end of rangeconverter.prototype
 
 // keep the current position of the cursor during on the fly translation
 function MappingPosition(node) {
-	this.inEditor = this.isEditor(node);
-	if (this.inEditor) {
-		var selection = this.getSelection(node);
-		this.focusNode = selection.focusNode;
-		this.focusOffset = selection.focusOffset;
-	}
-	else {
-		this.position = node.selectionStart;
-	}
+  this.inEditor = this.isEditor(node);
+  if (this.inEditor) {
+    var selection = this.getSelection(node);
+    this.focusNode = selection.focusNode;
+    this.focusOffset = selection.focusOffset;
+  }
+  else {
+    this.position = node.selectionStart;
+  }
 }
 
 MappingPosition.prototype = {
-	getSelection: function(node) {
-		if (!node)
-			return null;
-		else
-	  		return node.getSelection ? node.getSelection() : node.ownerDocument.defaultView.getSelection();//node.contentWindow.getSelection();
-	},
+  getSelection: function(node) {
+    if (!node)
+      return null;
+    else
+        return node.getSelection ? node.getSelection() : node.ownerDocument.defaultView.getSelection();//node.contentWindow.getSelection();
+  },
 
-	isEditor: function(node) {
-		return node && (node == node.ownerDocument.documentElement || TransliteratorWindowDelegate.prototype.checkContentEditable(node));//node.tagName == "HTML"; //((node.getEditor != undefined) || (node.contentDocument != undefined));
-	},
+  isEditor: function(node) {
+    return node && (node == node.ownerDocument.documentElement || TransliteratorWindowDelegate.prototype.checkContentEditable(node));//node.tagName == "HTML"; //((node.getEditor != undefined) || (node.contentDocument != undefined));
+  },
 
-	equals: function (other) {
-		if (this.inEditor != other.inEditor)
-			return false;
-		if (this.inEditor) {
-			return (this.focusNode == other.focusNode && this.focusOffset == other.focusOffset);
-		} else {
-			return this.position == other.position;
-		}
-	}
+  equals: function (other) {
+    if (this.inEditor != other.inEditor)
+      return false;
+    if (this.inEditor) {
+      return (this.focusNode == other.focusNode && this.focusOffset == other.focusOffset);
+    } else {
+      return this.position == other.position;
+    }
+  }
 } // end of mappingposition.prototype
 
 // keep the current state during on the fly conversion
 function MappingState(node, commandKey, eventHandler) {
-	this.node = node;
-	this.convertedBuffer = "";
-	this.sourceBuffer    = "";
-	this.position = new MappingPosition(this.node);
+  this.node = node;
+  this.convertedBuffer = "";
+  this.sourceBuffer    = "";
+  this.position = new MappingPosition(this.node);
 
-	//this.reset();
-	this.handler = eventHandler; // the handler for keypress event
-	this.key = commandKey; // the key to converter, etc
+  //this.reset();
+  this.handler = eventHandler; // the handler for keypress event
+  this.key = commandKey; // the key to converter, etc
 
-	// save and set visuals
-	// TODO change this to something more flexible
-	//if (MappingPosition.prototype.isEditor(this.node)) {
+  // save and set visuals
+  // TODO change this to something more flexible
+  //if (MappingPosition.prototype.isEditor(this.node)) {
     if (node == node.ownerDocument.documentElement) {
-		this.outline = node.style.border;
+    this.outline = node.style.border;
         node.style.border = this.style;
     }
-	else {
-	    this.outline = node.style.outline;
+  else {
+      this.outline = node.style.outline;
         node.style.outline = this.style;
     }
 
@@ -1411,11 +1337,11 @@ function MappingState(node, commandKey, eventHandler) {
 MappingState.prototype = {
     style : "dotted 1px blue",
 
-	reset : function() {
-		this.convertedBuffer = "";
-		this.sourceBuffer = "";
-		this.position = new MappingPosition(this.node);
-	},
+  reset : function() {
+    this.convertedBuffer = "";
+    this.sourceBuffer = "";
+    this.position = new MappingPosition(this.node);
+  },
 
     clear: function() {
         this.node.removeEventListener("keypress", this.handler, false);
@@ -1430,8 +1356,8 @@ MappingState.prototype = {
 
 
 function MappingResult() {
-	this.out = "";
-	this.replace = 0;
+  this.out = "";
+  this.replace = 0;
 }
 
 function ConversionMapEntry(string, specialCase) {
@@ -1440,8 +1366,8 @@ function ConversionMapEntry(string, specialCase) {
 }
 
 function Converter(conversionTable, caseSensitive, reverse) {
-	this.maxSourceLength = 0;
-	this.maxResultLength = 0;
+  this.maxSourceLength = 0;
+  this.maxResultLength = 0;
     this.conversionMap = {};
     this.reverseMap    = {};
     this.caseSensitive = false;
@@ -1502,7 +1428,7 @@ Converter.prototype = {
                 this.reverseMap[result] = source;
 
             if (!hasBackspaces)
-            	hasBackspaces = result.indexOf("\u0008") >= 0;
+              hasBackspaces = result.indexOf("\u0008") >= 0;
 
             this.maxSourceLength = Math.max(this.maxSourceLength, source.length);
             this.maxResultLength = Math.max(this.maxResultLength, result.length);
@@ -1512,11 +1438,11 @@ Converter.prototype = {
         if (hasBackspaces) {
             this.hasBackspaces = true;
             this.convert_string = function(string) {
-            	return this.applyBackspaces(this.convert(string));
+              return this.applyBackspaces(this.convert(string));
             };
         }
         else {
-        	this.convert_string = this.convert;
+          this.convert_string = this.convert;
 
         }
 
@@ -1532,111 +1458,111 @@ Converter.prototype = {
             output = "";
 
 
-	    var hash = this.conversionMap;
+      var hash = this.conversionMap;
 
-	    var location = 0;
+      var location = 0;
 
-	    while (location < src.length) {
-	        var len = Math.min(this.maxSourceLength, src.length - location);
-	        var entry = null;
-	        var sub;
+      while (location < src.length) {
+          var len = Math.min(this.maxSourceLength, src.length - location);
+          var entry = null;
+          var sub;
 
             // search for the longest match at this location
-	        while (len > 0) {
-	            sub = src.substr(location, len);
+          while (len > 0) {
+              sub = src.substr(location, len);
                 if (this.caseSensitive)
                     entry = hash[sub];
                 else
-	                entry = hash[sub.toLocaleUpperCase()];
-	            if (entry)
-	                break;
-	            else
-	                len--;
-	        }
+                  entry = hash[sub.toLocaleUpperCase()];
+              if (entry)
+                  break;
+              else
+                  len--;
+          }
 
-	        // need this for translit on the fly
-	        if (chunks != undefined)
-	            chunks.push([sub, !entry || len == 0 ? 0 : entry.value.length]);
+          // need this for translit on the fly
+          if (chunks != undefined)
+              chunks.push([sub, !entry || len == 0 ? 0 : entry.value.length]);
 
-	        if (!entry) {
-	            output += sub;
-	            location += sub.length;
-	        }
-	        else {
-	            var result = entry.value;
+          if (!entry) {
+              output += sub;
+              location += sub.length;
+          }
+          else {
+              var result = entry.value;
 
                 if (!this.caseSensitive) {
-	                // case analysis
-		            if (sub.toLocaleLowerCase() == sub.toLocaleUpperCase() && entry.specialCase && (result.toLocaleUpperCase() != result.toLocaleLowerCase())) {
-		                // source is caseless, target is not caseless, guess case set to true - going to figure out the desired case for newStr
+                  // case analysis
+                if (sub.toLocaleLowerCase() == sub.toLocaleUpperCase() && entry.specialCase && (result.toLocaleUpperCase() != result.toLocaleLowerCase())) {
+                    // source is caseless, target is not caseless, guess case set to true - going to figure out the desired case for newStr
 
-		                // need translit hash to determine if previous character (and possibly the one before it)
-		                // were converted and are in upper case
+                    // need translit hash to determine if previous character (and possibly the one before it)
+                    // were converted and are in upper case
 
-		                // set prevDud to true previous is not a translated character or simply a blank
-		                // set prevCap to true if previous was translated and was upper case
+                    // set prevDud to true previous is not a translated character or simply a blank
+                    // set prevCap to true if previous was translated and was upper case
 
-		                var prevCh = output.length == 0 ? null : output.substr(output.length - 1, 1);
-		                var prevDud = !prevCh || !this.reverseMap[prevCh.toLocaleUpperCase()];
-		                var prevCap = (!prevDud && prevCh == prevCh.toLocaleUpperCase());
+                    var prevCh = output.length == 0 ? null : output.substr(output.length - 1, 1);
+                    var prevDud = !prevCh || !this.reverseMap[prevCh.toLocaleUpperCase()];
+                    var prevCap = (!prevDud && prevCh == prevCh.toLocaleUpperCase());
 
-		                // sub is caseless but result isn't. case will depend on lookbehind and lookahead
-		                if (prevDud || !prevCap) {
-		                    result = result.toLocaleLowerCase();
-		                    prevCap = false;
-		                }
-		                else {
-		                    var next = " ";
-		                    if (location + len < src.length)
-		                        next = src.substr(location + len, 1);
+                    // sub is caseless but result isn't. case will depend on lookbehind and lookahead
+                    if (prevDud || !prevCap) {
+                        result = result.toLocaleLowerCase();
+                        prevCap = false;
+                    }
+                    else {
+                        var next = " ";
+                        if (location + len < src.length)
+                            next = src.substr(location + len, 1);
 
-		                    if (next != next.toLocaleUpperCase() && next == next.toLocaleLowerCase() ) {
-		                        //next is lowercase (and not caseless)
-		                        result = result.toLocaleLowerCase();
-		                    }
-		                    else if (next == next.toLocaleUpperCase() && next != next.toLocaleLowerCase() ) {
-		                        // next is uppercase (and not caseless)
-		                        result = result.toLocaleUpperCase();
-		                    }
-		                    else {
-		                        // next is caseless. output case determined by the case of output[length - 2]
-		                        var pprevCh = output.length == 1 ? null : output.substr(output.length - 2, 1);
-		                        var pprevDud = !pprevCh || !this.reverseMap[pprevCh.toLocaleUpperCase()];
-		                        if (!pprevDud && (pprevCh == pprevCh.toLocaleUpperCase())) {
-		                            //pre-prev is in upper case. output is also uppercase
-		                            result = result.toLocaleUpperCase();
-		                        }
-		                        else {
-		                            result = result.toLocaleLowerCase();
-		                        }
+                        if (next != next.toLocaleUpperCase() && next == next.toLocaleLowerCase() ) {
+                            //next is lowercase (and not caseless)
+                            result = result.toLocaleLowerCase();
+                        }
+                        else if (next == next.toLocaleUpperCase() && next != next.toLocaleLowerCase() ) {
+                            // next is uppercase (and not caseless)
+                            result = result.toLocaleUpperCase();
+                        }
+                        else {
+                            // next is caseless. output case determined by the case of output[length - 2]
+                            var pprevCh = output.length == 1 ? null : output.substr(output.length - 2, 1);
+                            var pprevDud = !pprevCh || !this.reverseMap[pprevCh.toLocaleUpperCase()];
+                            if (!pprevDud && (pprevCh == pprevCh.toLocaleUpperCase())) {
+                                //pre-prev is in upper case. output is also uppercase
+                                result = result.toLocaleUpperCase();
+                            }
+                            else {
+                                result = result.toLocaleLowerCase();
+                            }
 
-		                    }
-		                }
+                        }
+                    }
 
-		            }
-		            else if ((sub.toLocaleLowerCase() == sub.toLocaleUpperCase()) && (!entry.specialCase)) {
-		                // literal treatment of newStr - source is caseless, no guessing
-		                // leave result as is
-		            }
-		            else if (sub != sub.toLocaleLowerCase()) {
-		                if (result.length > 1 && sub != sub.toLocaleUpperCase()) {
+                }
+                else if ((sub.toLocaleLowerCase() == sub.toLocaleUpperCase()) && (!entry.specialCase)) {
+                    // literal treatment of newStr - source is caseless, no guessing
+                    // leave result as is
+                }
+                else if (sub != sub.toLocaleLowerCase()) {
+                    if (result.length > 1 && sub != sub.toLocaleUpperCase()) {
                             // sub not all-lowercase
-		                    // capitalize first letter of newStr
-		                    result = result.substr(0, 1).toLocaleUpperCase() + result.substr(1).toLocaleLowerCase();
-		                }
-		                else {
-		                    result = result.toLocaleUpperCase();
-		                }
-		            }
-		            else {
-		                // sub is lowercase
-		                result = result.toLocaleLowerCase();
-		            }
+                        // capitalize first letter of newStr
+                        result = result.substr(0, 1).toLocaleUpperCase() + result.substr(1).toLocaleLowerCase();
+                    }
+                    else {
+                        result = result.toLocaleUpperCase();
+                    }
+                }
+                else {
+                    // sub is lowercase
+                    result = result.toLocaleLowerCase();
+                }
                 }
                 output += result;
-	            location += len;
-	        }
-	    }
+              location += len;
+          }
+      }
 
 
         return output;
@@ -1653,88 +1579,88 @@ Converter.prototype = {
         return arr.join("");
     },
 
-	splitHtmlString: function(string) {
-		var re = /<[\/]?[!A-Z][^>]*>/ig;
-		var result = new Array();
-		var lastIndex = 0;
-		var arr = null;
-		while ( (arr = re.exec(string)) != null) {
-			result.push(string.substring(lastIndex, arr.index));
-			result.push(string.substring(arr.index, re.lastIndex));
-			lastIndex = re.lastIndex;
-		}
-		result.push(string.substr(lastIndex));
+  splitHtmlString: function(string) {
+    var re = /<[\/]?[!A-Z][^>]*>/ig;
+    var result = new Array();
+    var lastIndex = 0;
+    var arr = null;
+    while ( (arr = re.exec(string)) != null) {
+      result.push(string.substring(lastIndex, arr.index));
+      result.push(string.substring(arr.index, re.lastIndex));
+      lastIndex = re.lastIndex;
+    }
+    result.push(string.substr(lastIndex));
 
-		return result;
-	},
+    return result;
+  },
 
-	//process backspace characters in the string
-	applyBackspaces: function(string) {
-		var regex = /[^\u0008]\u0008/g;
-		do {
-			var len = string.length;
-			string = string.replace(regex, "");
-		} while (string.length < len);
-		string = string.replace(/\u0008/g, "");
-		return string;
-	},
+  //process backspace characters in the string
+  applyBackspaces: function(string) {
+    var regex = /[^\u0008]\u0008/g;
+    do {
+      var len = string.length;
+      string = string.replace(regex, "");
+    } while (string.length < len);
+    string = string.replace(/\u0008/g, "");
+    return string;
+  },
 
-	//in: mappingstate for this node & new character
-	//out: mappingresult
-	processNextChar: function(windowAdapter, state, c) {
-		// reset state if position changed
-		if (!state.position.equals(new MappingPosition(state.node)))
-			state.reset();
+  //in: mappingstate for this node & new character
+  //out: mappingresult
+  processNextChar: function(windowAdapter, state, c) {
+    // reset state if position changed
+    if (!state.position.equals(new MappingPosition(state.node)))
+      state.reset();
 
-		var result = new MappingResult();
+    var result = new MappingResult();
 
-		// initial backbuffer. Add to it as characters are converted
+    // initial backbuffer. Add to it as characters are converted
         // backbuffer needed for lookbehind
-		// 2*maxSourceLength because current lookbehind requires 2 characters beyond what's currently in the translit buffer for case calculations
-		var backbuffer = windowAdapter.getBackBuffer(state.node, state.convertedBuffer.length, 2 * this.maxSourceLength);
+    // 2*maxSourceLength because current lookbehind requires 2 characters beyond what's currently in the translit buffer for case calculations
+    var backbuffer = windowAdapter.getBackBuffer(state.node, state.convertedBuffer.length, 2 * this.maxSourceLength);
 
-		var chunks = [];
+    var chunks = [];
 
-		state.sourceBuffer = state.sourceBuffer + c;
+    state.sourceBuffer = state.sourceBuffer + c;
 
-		var str = this.convert(state.sourceBuffer, backbuffer, chunks);
+    var str = this.convert(state.sourceBuffer, backbuffer, chunks);
 
-		// remove backbuffer from output
-		str = str.substr(backbuffer.length);
-		result.out = str;
-		/* str is now left alone - it has the output matching contents of chunks and
-		   will be used to reinitialize backbuffers, along with chunks and state.sourceBuffer
-		*/
+    // remove backbuffer from output
+    str = str.substr(backbuffer.length);
+    result.out = str;
+    /* str is now left alone - it has the output matching contents of chunks and
+       will be used to reinitialize backbuffers, along with chunks and state.sourceBuffer
+    */
 
 
         if (result.out.length >= state.convertedBuffer.length) {
-			// get the difference between state.convertedBuffer and output
-			for (var i = 0; i < Math.min(state.convertedBuffer.length, result.out.length); i++) {
-				if (state.convertedBuffer.substr(i, 1) != result.out.substr(i, 1)) {
-					result.replace = state.convertedBuffer.length - i;
-					result.out = result.out.substr(i);
-					break;
-				}
-			}
-			if (result.replace == 0) {
-				result.out = result.out.substr(Math.min(state.convertedBuffer.length, result.out.length));
-			}
+      // get the difference between state.convertedBuffer and output
+      for (var i = 0; i < Math.min(state.convertedBuffer.length, result.out.length); i++) {
+        if (state.convertedBuffer.substr(i, 1) != result.out.substr(i, 1)) {
+          result.replace = state.convertedBuffer.length - i;
+          result.out = result.out.substr(i);
+          break;
+        }
+      }
+      if (result.replace == 0) {
+        result.out = result.out.substr(Math.min(state.convertedBuffer.length, result.out.length));
+      }
         }
         else {
             result.replace = state.convertedBuffer.length;
         }
 
         while (state.sourceBuffer.length > this.maxSourceLength) {
-			state.sourceBuffer = state.sourceBuffer.substr(chunks[0][0].length);
-			// chunks[i][1] evaluates to false if no conversion took place, otherwise holds the length of cyr string
-			str = str.substr(chunks[0][1] ? chunks[0][1] : chunks[0][0].length);
-			chunks.shift();
-		}
-		state.convertedBuffer = str;
+      state.sourceBuffer = state.sourceBuffer.substr(chunks[0][0].length);
+      // chunks[i][1] evaluates to false if no conversion took place, otherwise holds the length of cyr string
+      str = str.substr(chunks[0][1] ? chunks[0][1] : chunks[0][0].length);
+      chunks.shift();
+    }
+    state.convertedBuffer = str;
 
-		return result;
+    return result;
 
-	}
+  }
 
 }
 

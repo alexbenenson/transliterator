@@ -9,6 +9,7 @@
     <em:creator>Alex Benenson</em:creator>
     <em:homepageURL>http://www.benya.com/transliterator/</em:homepageURL>
     <em:optionsURL>chrome://transliterator/content/prefs.xul</em:optionsURL>
+    <em:bootstrap>true</em:bootstrap>
     <em:contributor>Stilian Goranov</em:contributor>
     <em:contributor>Ljubisa Radovanovic</em:contributor>
     <em:contributor>Peter Seizov</em:contributor>
