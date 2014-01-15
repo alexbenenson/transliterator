@@ -23,7 +23,7 @@ How to test
 Transliterator builds can be installed automatically into your browser via
 [Extension Auto-Installer extension](https://addons.mozilla.org/addon/autoinstaller/).
 In order to do that run `autoinstaller.py` script in this directory (Python 2.x
-required). By default, it is assumed that xtension Auto-Installer is listening
+required). By default, it is assumed that Extension Auto-Installer is listening
 on port 8888, you can specify a different port as command line parameter:
 
     python autoinstall.py 7777
