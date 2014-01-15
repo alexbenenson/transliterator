@@ -404,13 +404,7 @@ function TransliteratorWindowDelegate(service, wnd) {
 TransliteratorWindowDelegate.prototype = {
 
     init: function() {
-      var selfRef = this;
       this.reconfTimeout = 0;
-
-
-      this.executeReconfigureImpl = function() {
-        selfRef.reconfigureImpl();
-      };
 
       if (this._window.document.readyState == "complete")
         this.attach();
@@ -469,7 +463,7 @@ TransliteratorWindowDelegate.prototype = {
         // called when preferences changed
         if (this.reconfTimeout)
             this.getWindow().clearTimeout(this.reconfTimeout);
-        this.reconfTimeout = this.getWindow().setTimeout(this.executeReconfigureImpl, 100);
+        this.reconfTimeout = this.getWindow().setTimeout(this.reconfigureImpl.bind(this), 100);
     },
 
     reconfigureImpl: function() {
@@ -617,60 +611,40 @@ TransliteratorWindowDelegate.prototype = {
 
     addShortcuts: function() {
 
-        var win = this.getWindow();
-        var doc = win.document;
+      var win = this.getWindow();
+      var doc = win.document;
 
-        // get or create keyset
-        if (!this.keyset) {
-          this.keyset = doc.createElement("keyset");
-          doc.documentElement.appendChild(this.keyset);
-          this.addNode(this.keyset);
+      // Create keyset
+      if (this.keyset && this.keyset.parentNode)
+        this.keyset.parentNode.removeChild(this.keyset);
+      this.keyset = doc.createElement("keyset");
+      doc.documentElement.appendChild(this.keyset);
+      this.addNode(this.keyset);
+
+      var endPoints = this.getEndPoints();
+
+
+      // create keys
+      for (var i = 0; i < endPoints.length; i++) {
+        var endPoint = endPoints[i];
+        if (endPoint.keyCode && endPoint.keyCode != "") {
+          var key = doc.createElement("key");
+
+          key.setAttribute("id", "key_" + endPoint.commandKey);
+
+          if (endPoint.keyCode.length == 4)
+              key.setAttribute("key", endPoint.keyCode.substr(3).toLowerCase());
+          else {
+              key.setAttribute("keycode", endPoint.keyCode.toLocaleUpperCase());
+          }
+
+          if (endPoint.modifiers)
+              key.setAttribute("modifiers", endPoint.modifiers);
+          key.setAttribute("command", endPoint.commandKey);
+
+          this.keyset.appendChild(key);
         }
-
-        var endPoints = this.getEndPoints();
-
-
-        // create keys
-        var keyCounter = 0;
-        for (var i = 0; i < endPoints.length; i++) {
-            var endPoint = endPoints[i];
-            if (endPoint.keyCode && endPoint.keyCode != "") {
-                var key;
-
-                if (this.keys.length > keyCounter)
-                    key = this.keys[keyCounter];
-                else {
-                    var key = doc.createElement("key");
-                    this.keyset.appendChild(key);
-                    this.keys.push(key);
-                }
-                key.setAttribute("id", "key_" + endPoint.commandKey);
-
-                if (endPoint.keyCode.length == 4)
-                    key.setAttribute("key", endPoint.keyCode.substr(3).toLowerCase());
-                else {
-                    key.setAttribute("keycode", endPoint.keyCode.toLocaleUpperCase());
-                }
-                //key.setAttribute("keycode", endPoint.keyCode);
-
-                if (endPoint.modifiers)
-                    key.setAttribute("modifiers", endPoint.modifiers);
-                key.setAttribute("command", endPoint.commandKey);
-
-                //this.addNode(key);
-                keyCounter++;
-           }
-        }
-
-        for (var i = keyCounter; i < this.keys.length; i++) {
-            var key = this.keys[i];
-            key.removeAttribute("id");
-            key.removeAttribute("modifiers");
-            key.removeAttribute("key");
-            key.removeAttribute("keyCode");
-            key.removeAttribute("command");
-        }
-
+      }
     },
 
     addOptionsMenu: function() {
