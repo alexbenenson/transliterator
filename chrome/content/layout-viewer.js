@@ -40,14 +40,9 @@ function showLayout() {
 
     var headerOne = document.getElementById("header-one");
     var headerTwo = document.getElementById("header-two");
-    if (inverse) {
-        headerOne.setAttribute("label", "this");
-        headerTwo.setAttribute("label", "transliterates to this");
-    }
-    else {
-        headerOne.setAttribute("label", "to get this");
-        headerTwo.setAttribute("label", "enter one of these");
-    }
+    var labelAttr = (inverse ? "data-invlabel" : "data-stdlabel");
+    headerOne.setAttribute("label", headerOne.getAttribute(labelAttr));
+    headerTwo.setAttribute("label", headerTwo.getAttribute(labelAttr));
 
     var layout = window.translitLayout.layout;
 

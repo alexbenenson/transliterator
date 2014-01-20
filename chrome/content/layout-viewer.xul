@@ -12,9 +12,12 @@
     map
     case sensitivity
 -->
+
+<!DOCTYPE dialog SYSTEM "chrome://transliterator/locale/layout-viewer.dtd">
+
 <dialog id="transliterator-layout-viewer"
         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-        title="View Layout"
+        title="&title;"
         buttons="accept"
         onload="onLoad();">
         <!--ondialogaccept="return onAccept();"-->
@@ -23,12 +26,12 @@
 
         <label id="description" value="" style="font-weight: bold"/>
         <label id="case-sensitivity" value="" />
-        <checkbox checked="false" id="inverse" label="Show inverse mapping" oncommand="setInverse()" />
+        <checkbox checked="false" id="inverse" label="&inverse.caption;" oncommand="setInverse()" />
 
         <listbox id="layoutGrid" flex="1" >
             <listhead>
-                <listheader id="header-one" label="To get this"/>
-                <listheader id="header-two" label="Enter one of these"/>
+                <listheader id="header-one" label="&target.column;" data-stdlabel="&target.column;" data-invlabel="&inverse.source.column;"/>
+                <listheader id="header-two" label="&source.column;" data-stdlabel="&source.column;" data-invlabel="&inverse.target.column;"/>
             </listhead>
 
             <listcols>
@@ -37,5 +40,5 @@
             </listcols>
 
         </listbox>
-        <label id="underlined" value="Strings with spaces are underlined"/>
+        <label id="underlined" value="&spaces.hint;"/>
 </dialog>

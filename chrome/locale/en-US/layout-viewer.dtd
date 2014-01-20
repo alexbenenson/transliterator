@@ -1,0 +1,7 @@
+<!ENTITY title "View Layout">
+<!ENTITY inverse.caption "Show inverse mapping">
+<!ENTITY target.column "To get this">
+<!ENTITY source.column "Enter one of these">
+<!ENTITY inverse.source.column "This">
+<!ENTITY inverse.target.column "Transliterates to this">
+<!ENTITY spaces.hint "Strings with spaces are underlined">
