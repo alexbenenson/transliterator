@@ -57,17 +57,17 @@
 	                <label value="&shortcut.column;"/>
 	            </row>
 	            <row align="center">
-	                <label value="&detransliterate.label;"/>
+	                <label id="fromtranslit-default" control="fromtranslit-label"/>
 	                <textbox id="fromtranslit-label"/>
 	                <textbox id="fromtranslit-shortcut" tooltiptext="&key-selector.tooltip;" onkeypress="shortcutKeyPress(event);"/>
 	            </row>
 	            <row align="center">
-	                <label value="&transliterate.label;"/>
+	                <label id="totranslit-default" control="totranslit-label"/>
 	                <textbox id="totranslit-label"/>
 	                <textbox id="totranslit-shortcut" tooltiptext="&key-selector.tooltip;" onkeypress="shortcutKeyPress(event);"/>
 	            </row>
 	            <row align="center">
-	                <label value="&toggle-mode.label;"/>
+	                <label id="togglemode-default" control="togglemode-label"/>
 	                <textbox id="togglemode-label"/>
 	                <textbox id="togglemode-shortcut" tooltiptext="&key-selector.tooltip;" onkeypress="shortcutKeyPress(event);"/>
 	            </row>

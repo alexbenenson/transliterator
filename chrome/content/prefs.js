@@ -4,6 +4,11 @@
  * http://mozilla.org/MPL/2.0/.
  */
 
+Components.utils.import("resource://gre/modules/Services.jsm");
+
+var commands = ["fromtranslit", "totranslit", "togglemode"];
+var stringBundle = Services.strings.createBundle("chrome://transliterator/locale/prefs.properties");
+
 function setUnicodePref(prefName,prefValue,prefBranch) {
     var sString = Components.classes["@mozilla.org/supports-string;1"].createInstance(Components.interfaces.nsISupportsString);
     sString.data = prefValue;
@@ -39,18 +44,16 @@ function onLoad() {
     btnApply.addEventListener("click", onAccept, false);
 
     // load settings
-    var pref = Components.classes['@mozilla.org/preferences-service;1'].getService(Components.interfaces.nsIPrefService).getBranch("extensions.transliterator.");
+    var pref = Services.prefs.getBranch("extensions.transliterator.");
 
-    document.getElementById("fromtranslit-label").value = getUnicodePref("commands.fromtranslit.label", pref);
-    document.getElementById("totranslit-label").value = getUnicodePref("commands.totranslit.label", pref);
-    document.getElementById("togglemode-label").value = getUnicodePref("commands.togglemode.label", pref);
-
-    //document.getElementById("fromtranslit-shortcut").value = pref.getCharPref("commands.fromtranslit.shortcut");
-    //document.getElementById("totranslit-shortcut").value = pref.getCharPref("commands.totranslit.shortcut");
-    //document.getElementById("togglemode-shortcut").value = pref.getCharPref("commands.togglemode.shortcut");
-    setShortcutValue(document.getElementById("fromtranslit-shortcut"), pref.getCharPref("commands.fromtranslit.shortcut"));
-    setShortcutValue(document.getElementById("totranslit-shortcut"), pref.getCharPref("commands.totranslit.shortcut"));
-    setShortcutValue(document.getElementById("togglemode-shortcut"), pref.getCharPref("commands.togglemode.shortcut"));
+    for (var i = 0; i < commands.length; i++) {
+      var command = commands[i];
+      var defaultLabel = stringBundle.GetStringFromName(command + ".label");
+      var currentLabel = getUnicodePref("commands." + command + ".label", pref);
+      document.getElementById(command + "-default").value = defaultLabel;
+      document.getElementById(command + "-label").value = currentLabel || defaultLabel;
+      setShortcutValue(document.getElementById(command + "-shortcut"), pref.getCharPref("commands." + command + ".shortcut"));
+    }
 
     var childCount = new Object();
     var list = pref.getChildList("layouts.", childCount);
@@ -130,35 +133,17 @@ function objToString(obj) {
 function onAccept() {
     //save new settings
 
-    var pref = Components.classes['@mozilla.org/preferences-service;1'].getService(Components.interfaces.nsIPrefService).getBranch("extensions.transliterator.");
+    var pref = Services.prefs.getBranch("extensions.transliterator.");
 
-    if (document.getElementById("fromtranslit-label").value != getUnicodePref("commands.fromtranslit.label", pref))
-        setUnicodePref("commands.fromtranslit.label", document.getElementById("fromtranslit-label").value, pref);
+    for (var i = 0; i < commands.length; i++) {
+      var command = commands[i];
+      var defaultLabel = stringBundle.GetStringFromName(command + ".label");
+      var currentLabel = document.getElementById(command + "-label").value;
+      setUnicodePref("commands." + command + ".label", currentLabel != defaultLabel ? currentLabel : "", pref);
 
-    if (document.getElementById("totranslit-label").value != getUnicodePref("commands.totranslit.label", pref))
-        setUnicodePref("commands.totranslit.label", document.getElementById("totranslit-label").value, pref);
-
-    if (document.getElementById("togglemode-label").value != getUnicodePref("commands.togglemode.label", pref))
-        setUnicodePref("commands.togglemode.label", document.getElementById("togglemode-label").value, pref);
-
-    var scFrom = getShortcutValue(document.getElementById("fromtranslit-shortcut"));
-    //if (document.getElementById("fromtranslit-shortcut").value != pref.getCharPref("commands.fromtranslit.shortcut"))
-    //    pref.setCharPref("commands.fromtranslit.shortcut", document.getElementById("fromtranslit-shortcut").value);
-    if (scFrom != pref.getCharPref("commands.fromtranslit.shortcut"))
-        pref.setCharPref("commands.fromtranslit.shortcut", scFrom);
-
-    var scTo = getShortcutValue(document.getElementById("totranslit-shortcut"));
-
-    if (scTo != pref.getCharPref("commands.totranslit.shortcut"))
-        pref.setCharPref("commands.totranslit.shortcut", scTo);
-    //if (document.getElementById("totranslit-shortcut").value != pref.getCharPref("commands.totranslit.shortcut"))
-    //    pref.setCharPref("commands.totranslit.shortcut", document.getElementById("totranslit-shortcut").value);
-
-    var scToggle = getShortcutValue(document.getElementById("togglemode-shortcut"));
-    if (scToggle != pref.getCharPref("commands.togglemode.shortcut"))
-        pref.setCharPref("commands.togglemode.shortcut", scToggle);
-    //if (document.getElementById("togglemode-shortcut").value != pref.getCharPref("commands.togglemode.shortcut"))
-    //    pref.setCharPref("commands.togglemode.shortcut", document.getElementById("togglemode-shortcut").value);
+      var shortcut = getShortcutValue(document.getElementById(command + "-shortcut"));
+      pref.setCharPref("commands." + command + ".shortcut", shortcut);
+    }
 
     if (document.getElementById("layout-select").value != pref.getCharPref("layout"))
         pref.setCharPref("layout", document.getElementById("layout-select").value);

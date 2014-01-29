@@ -4,7 +4,4 @@
 <!ENTITY menus.group "Метки и сочетания клавиш">
 <!ENTITY menu-label.column "Текст метки меню">
 <!ENTITY shortcut.column "Сочетание клавиш">
-<!ENTITY detransliterate.label "Перевести из транслита">
-<!ENTITY transliterate.label "Транслитерировать">
-<!ENTITY toggle-mode.label "Переключить режим клавиатуры">
 <!ENTITY key-selector.tooltip "Нажмите нужное сочетание клавиш в этом поле">
