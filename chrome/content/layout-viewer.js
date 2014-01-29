@@ -53,7 +53,6 @@ function showLayout() {
 
 
   var targetSet = {};
-  var targetList = [];
 
   for (var i = 0; i < layout.length; i++) {
     var src = convCase(layout[i][0]);
@@ -65,17 +64,16 @@ function showLayout() {
     //replace backspaces with \u2190
     trg = trg.replace("\x08", "\u2190");
 
-    if (targetSet[trg]) {
-      if (!inverse)
-        targetSet[trg].push(src);
-    }
+    if (inverse)
+      targetSet[src] = trg;
     else {
-      targetSet[trg] = [src];
-      targetList.push(trg);
+      if (!targetSet.hasOwnProperty(trg))
+        targetSet[trg] = [];
+      targetSet[trg].push(src);
     }
   }
 
-  targetList.sort(function(s1, s2) {return s1.localeCompare(s2)});
+  var targetList = Object.keys(targetSet).sort(function(s1, s2) {return s1.localeCompare(s2)});
   var underlined = false;
 
   for (var i = 0; i < targetList.length; i++) {
@@ -88,7 +86,7 @@ function showLayout() {
     lct.setAttribute("label", targetList[i]);
 
     if (inverse)
-      lcs.setAttribute("label", targetSet[targetList[i]][0]);
+      lcs.setAttribute("label", targetSet[targetList[i]]);
     else
       lcs.setAttribute("label", targetSet[targetList[i]].join(", "));
 
