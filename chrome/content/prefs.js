@@ -29,12 +29,25 @@ function getBoolPref(prefName, prefBranch) {
 }
 
 function setShortcutValue(element, shortcut) {
-	element.value = shortcut.replace(/VK_/i, "");
-	element.setAttribute("keyval", shortcut);
+  // Store original shortcut value so that it can be retrieved later
+  element.setAttribute("data-keyval", shortcut.join(" "));
+
+  // Produce a nicer representation of the shortcut to be displayed
+  var mapping = {
+    "alt": "Alt",
+    "control": "Ctrl",
+    "shift": "Shift",
+    "meta": "Meta"
+  };
+  for (var i = 0; i < shortcut.length - 1; i++)
+    shortcut[i] = (mapping.hasOwnProperty(shortcut[i]) ? mapping[shortcut[i]] : shortcut[i]);
+  if (shortcut.length)
+    shortcut[shortcut.length - 1] = shortcut[shortcut.length - 1].replace(/^VK_/, "");
+  element.value = shortcut.join("+");
 }
 
 function getShortcutValue(element) {
-	return element.getAttribute("keyval");
+  return element.getAttribute("data-keyval");
 }
 
 function onLoad() {
@@ -47,7 +60,7 @@ function onLoad() {
     var currentLabel = getUnicodePref("commands." + command + ".label", pref);
     document.getElementById(command + "-default").value = defaultLabel;
     document.getElementById(command + "-label").value = currentLabel || defaultLabel;
-    setShortcutValue(document.getElementById(command + "-shortcut"), pref.getCharPref("commands." + command + ".shortcut"));
+    setShortcutValue(document.getElementById(command + "-shortcut"), pref.getCharPref("commands." + command + ".shortcut").split(/\s+/));
   }
 
   var childCount = new Object();
@@ -80,37 +93,42 @@ function onLoad() {
 
 
 function shortcutKeyPress(event) {
+  // Ignore key presses that have special meaning in dialogs unless a modifier key is pressed
+  if (event.keyCode == event.DOM_VK_RETURN || event.keyCode == event.DOM_VK_ESCAPE || event.keyCode == event.DOM_VK_TAB)
+    if (!event.altKey && !event.ctrlKey && !event.metaKey)
+      return;
+
   event.preventDefault();
 
-  //if (event.keyCode == 0)
-  //  return;
-
-  var mods = "";
+  var mods = [];
   if (event.altKey)
-    mods += (mods == "" ? "" : "+") + "Alt";
+    mods.push("alt");
   if (event.ctrlKey)
-    mods += (mods == "" ? "" : "+") + "Ctrl";
+    mods.push("control");
   if (event.shiftKey)
-    mods += (mods == "" ? "" : "+") + "Shift";
+    mods.push("shift");
   if (event.metaKey)
-    mods += (mods == "" ? "" : "+") + "Meta";
+    mods.push("meta");
 
-  var keyCode = event.keyCode? event.keyCode : String.fromCharCode(event.charCode).toLocaleUpperCase().charCodeAt(0);
   var code = "";
-  //alert(keyCode);
-
-  // figure out the vk_ code
-  for (var i in event) {
-    if (i.search(/DOM_VK_/i) == 0)
-      if (event[i] == keyCode) {
-        code = i;
-        break;
+  if (event.keyCode) {
+    // figure out the vk_ code
+    for (var i in event) {
+      if (/^DOM_VK_/.test(i)) {
+        if (event[i] == event.keyCode) {
+          code = i.replace(/^DOM_/, "");
+          break;
+        }
       }
+    }
   }
-  code = code.replace(/DOM_/i, "");
+  else if (event.charCode)
+    code = String.fromCharCode(event.charCode).toLocaleUpperCase();
 
-  //event.target.value = mods + (mods == "" ? "" : "+") + code;
-  setShortcutValue(event.target, mods + (mods == "" ? "" : "+") + code);
+  if (!code)
+    return;
+
+  setShortcutValue(event.target, mods.concat([code]));
 }
 
 function objToString(obj) {
