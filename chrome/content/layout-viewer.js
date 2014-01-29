@@ -63,7 +63,7 @@ function showLayout() {
       continue;
 
     //replace backspaces with \u2190
-    trg = trg.replace(/\u008/, "\u2190");
+    trg = trg.replace("\x08", "\u2190");
 
     if (targetSet[trg]) {
       if (!inverse)
