@@ -28,7 +28,7 @@
         <label id="case-sensitivity" value="" />
         <checkbox checked="false" id="inverse" label="&inverse.caption;" oncommand="setInverse()" />
 
-        <listbox id="layoutGrid" flex="1" >
+        <listbox id="layoutGrid" flex="1" width="300">
             <listhead>
                 <listheader id="header-one" label="&target.column;" data-stdlabel="&target.column;" data-invlabel="&inverse.source.column;"/>
                 <listheader id="header-two" label="&source.column;" data-stdlabel="&source.column;" data-invlabel="&inverse.target.column;"/>
@@ -36,7 +36,7 @@
 
             <listcols>
                 <listcol flex="1"/>
-                <listcol flex="2"/>
+                <listcol flex="1"/>
             </listcols>
 
         </listbox>
