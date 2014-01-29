@@ -147,7 +147,7 @@ function onAccept() {
 }
 
 function openViewer() {
-  var pref = Components.classes['@mozilla.org/preferences-service;1'].getService(Components.interfaces.nsIPrefService).getBranch("extensions.transliterator.");
+  var pref = Services.prefs.getBranch("extensions.transliterator.");
 
   var layoutName = document.getElementById("layout-select").value;
 
@@ -156,8 +156,8 @@ function openViewer() {
   var caseSensitive = getBoolPref("layouts." + layoutName + ".case_sensitive", pref);
 
   window.openDialog("chrome://transliterator/content/layout-viewer.xul", "dlgview", "chrome,dialog,centerscreen,resizeable=no", {
-    layout: window.JSON ? window.JSON.parse(layout) : eval(layout),
-    name:   layoutName,
+    layout: JSON.parse(layout),
+    name: layoutName,
     description: layoutDesc,
     caseSensitive: caseSensitive
   });
