@@ -5,3 +5,4 @@
 <!ENTITY menu-label.column "Текст метки меню">
 <!ENTITY shortcut.column "Сочетание клавиш">
 <!ENTITY key-selector.tooltip "Нажмите нужное сочетание клавиш в этом поле">
+<!ENTITY apply.label "Применить">

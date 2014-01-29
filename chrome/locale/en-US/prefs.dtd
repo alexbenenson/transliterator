@@ -5,3 +5,4 @@
 <!ENTITY menu-label.column "Menu Label">
 <!ENTITY shortcut.column "Shortcut">
 <!ENTITY key-selector.tooltip "Hit the desired shortcut keys in this field">
+<!ENTITY apply.label "Apply">

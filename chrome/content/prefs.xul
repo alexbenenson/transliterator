@@ -19,7 +19,9 @@
         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
         title="&title;"
         buttons="accept,cancel,extra1"
+        buttonlabelextra1="&apply.label;"
         ondialogaccept="return onAccept();"
+        ondialogextra1="return onAccept();"
         onload="onLoad();"
         >
     <script type="application/x-javascript" src="chrome://transliterator/content/prefs.js"/>

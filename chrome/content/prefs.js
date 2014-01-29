@@ -38,11 +38,6 @@ function getShortcutValue(element) {
 }
 
 function onLoad() {
-
-    var btnApply = document.documentElement.getButton("extra1");
-    btnApply.label = "Apply";
-    btnApply.addEventListener("click", onAccept, false);
-
     // load settings
     var pref = Services.prefs.getBranch("extensions.transliterator.");
 
