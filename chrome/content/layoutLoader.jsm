@@ -1,3 +1,9 @@
+/*
+ * This Source Code is subject to the terms of the Mozilla Public License
+ * version 2.0 (the "License"). You can obtain a copy of the License at
+ * http://mozilla.org/MPL/2.0/.
+ */
+
 EXPORTED_SYMBOLS=["TransliteratorLayoutLoader"]
 
 Components.utils.import("resource://gre/modules/Services.jsm");
@@ -6,7 +12,7 @@ var console = Services.console;
 /**
  * public functions: 
  * 
- *     TransliteratorLayoutLoader.loadLayout(layoutName) - load the layout, return as a hash {name, description, layout, case_sensitive}
+ *  TransliteratorLayoutLoader.loadLayout(layoutName) - load the layout, return as a hash {name, description, layout, case_sensitive}
  *  TransliteratorLayoutLoader.getLayoutList() - get the list of all available layouts, return as an array of {name, description}, sorted on description
  * 
  */
@@ -20,8 +26,6 @@ var TransliteratorLayoutLoader = {
     loadLayout : function(layoutName) {
 
         /* load layout from pref. if not available, load from file */
-        
-        
         var layout = this.loadLayoutFromPrefs(layoutName);
         if (layout.layout.length == 0 || layout.description == "") 
             layout = this.loadLayoutFromFile(layoutName);
