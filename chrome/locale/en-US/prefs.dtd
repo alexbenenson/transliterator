@@ -4,7 +4,5 @@
 <!ENTITY menus.group "Labels and Shortcuts">
 <!ENTITY menu-label.column "Menu Label">
 <!ENTITY shortcut.column "Shortcut">
-<!ENTITY detransliterate.label "Detransliterate">
-<!ENTITY transliterate.label "Transliterate">
-<!ENTITY toggle-mode.label "Toggle Keyboard Mode">
 <!ENTITY key-selector.tooltip "Hit the desired shortcut keys in this field">
+<!ENTITY apply.label "Apply">

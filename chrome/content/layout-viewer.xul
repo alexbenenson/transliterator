@@ -8,9 +8,9 @@
    - http://mozilla.org/MPL/2.0/. -->
 
 <!-- arguments:
-    description
-    map
-    case sensitivity
+  description
+  map
+  case sensitivity
 -->
 
 <!DOCTYPE dialog SYSTEM "chrome://transliterator/locale/layout-viewer.dtd">
@@ -22,23 +22,23 @@
         onload="onLoad();">
         <!--ondialogaccept="return onAccept();"-->
 
-        <script type="application/x-javascript" src="chrome://transliterator/content/layout-viewer.js"/>
+  <script type="application/x-javascript" src="chrome://transliterator/content/layout-viewer.js"/>
 
-        <label id="description" value="" style="font-weight: bold"/>
-        <label id="case-sensitivity" value="" />
-        <checkbox checked="false" id="inverse" label="&inverse.caption;" oncommand="setInverse()" />
+  <label id="description" value="" style="font-weight: bold"/>
+  <label id="case-sensitivity" value="" />
+  <checkbox checked="false" id="inverse" label="&inverse.caption;" oncommand="setInverse()" />
 
-        <listbox id="layoutGrid" flex="1" >
-            <listhead>
-                <listheader id="header-one" label="&target.column;" data-stdlabel="&target.column;" data-invlabel="&inverse.source.column;"/>
-                <listheader id="header-two" label="&source.column;" data-stdlabel="&source.column;" data-invlabel="&inverse.target.column;"/>
-            </listhead>
+  <listbox id="layoutGrid" flex="1" width="300">
+    <listhead>
+      <listheader id="header-one" label="&target.column;" data-stdlabel="&target.column;" data-invlabel="&inverse.source.column;"/>
+      <listheader id="header-two" label="&source.column;" data-stdlabel="&source.column;" data-invlabel="&inverse.target.column;"/>
+    </listhead>
 
-            <listcols>
-                <listcol flex="1"/>
-                <listcol flex="2"/>
-            </listcols>
+    <listcols>
+      <listcol flex="1"/>
+      <listcol flex="1"/>
+    </listcols>
 
-        </listbox>
-        <label id="underlined" value="&spaces.hint;"/>
+  </listbox>
+  <label id="underlined" value="&spaces.hint;"/>
 </dialog>

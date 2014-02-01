@@ -19,59 +19,61 @@
         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
         title="&title;"
         buttons="accept,cancel,extra1"
+        buttonlabelextra1="&apply.label;"
         ondialogaccept="return onAccept();"
+        ondialogextra1="return onAccept();"
         onload="onLoad();"
         >
-    <script type="application/x-javascript" src="chrome://transliterator/content/prefs.js"/>
+  <script type="application/x-javascript" src="chrome://transliterator/content/prefs.js"/>
 
-    <groupbox>
-      <caption label="&layout.group;"/>
-      <grid>
-            <rows>
-                <row/>
-            </rows>
-            <columns>
-                <column flex="1">
-			       <menulist id="layout-select" flex="1">
-			            <menupopup id="layout-select-popup"/>
-			        </menulist>
-                </column>
-                <column>
-                    <button label="&view-layout.button;" oncommand="openViewer();" />
-                </column>
-            </columns>
-        </grid>
-    </groupbox>
-    <groupbox>
-        <caption label="&menus.group;"/>
-	    <grid flex="1" pack="center">
-	        <columns>
-	            <column />
-	            <column flex="1"/>
-	            <column flex="1"/>
-	        </columns>
-	        <rows>
-	            <row>
-	                <label/>
-	                <label value="&menu-label.column;"/>
-	                <label value="&shortcut.column;"/>
-	            </row>
-	            <row align="center">
-	                <label value="&detransliterate.label;"/>
-	                <textbox id="fromtranslit-label"/>
-	                <textbox id="fromtranslit-shortcut" tooltiptext="&key-selector.tooltip;" onkeypress="shortcutKeyPress(event);"/>
-	            </row>
-	            <row align="center">
-	                <label value="&transliterate.label;"/>
-	                <textbox id="totranslit-label"/>
-	                <textbox id="totranslit-shortcut" tooltiptext="&key-selector.tooltip;" onkeypress="shortcutKeyPress(event);"/>
-	            </row>
-	            <row align="center">
-	                <label value="&toggle-mode.label;"/>
-	                <textbox id="togglemode-label"/>
-	                <textbox id="togglemode-shortcut" tooltiptext="&key-selector.tooltip;" onkeypress="shortcutKeyPress(event);"/>
-	            </row>
-	        </rows>
-	    </grid>
-    </groupbox>
+  <groupbox>
+    <caption label="&layout.group;"/>
+    <grid>
+      <rows>
+        <row/>
+      </rows>
+      <columns>
+        <column flex="1">
+          <menulist id="layout-select" flex="1">
+            <menupopup id="layout-select-popup"/>
+          </menulist>
+        </column>
+        <column>
+          <button label="&view-layout.button;" oncommand="openViewer();" />
+        </column>
+      </columns>
+    </grid>
+  </groupbox>
+  <groupbox>
+    <caption label="&menus.group;"/>
+    <grid flex="1" pack="center">
+      <columns>
+        <column />
+        <column flex="1"/>
+        <column flex="1"/>
+      </columns>
+      <rows>
+        <row>
+          <label/>
+          <label value="&menu-label.column;"/>
+          <label value="&shortcut.column;"/>
+        </row>
+        <row align="center">
+          <label id="fromtranslit-default" control="fromtranslit-label"/>
+          <textbox id="fromtranslit-label"/>
+          <textbox id="fromtranslit-shortcut" tooltiptext="&key-selector.tooltip;" onkeypress="shortcutKeyPress(event);"/>
+        </row>
+        <row align="center">
+          <label id="totranslit-default" control="totranslit-label"/>
+          <textbox id="totranslit-label"/>
+          <textbox id="totranslit-shortcut" tooltiptext="&key-selector.tooltip;" onkeypress="shortcutKeyPress(event);"/>
+        </row>
+        <row align="center">
+          <label id="togglemode-default" control="togglemode-label"/>
+          <textbox id="togglemode-label"/>
+          <textbox id="togglemode-shortcut" tooltiptext="&key-selector.tooltip;" onkeypress="shortcutKeyPress(event);"/>
+        </row>
+      </rows>
+    </grid>
+  </groupbox>
 </dialog>

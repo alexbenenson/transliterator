@@ -6,171 +6,145 @@
 
 Components.utils.import("chrome://transliterator/content/layoutLoader.jsm");
 
+Components.utils.import("resource://gre/modules/Services.jsm");
+
+var commands = ["fromtranslit", "totranslit", "togglemode"];
+var stringBundle = Services.strings.createBundle("chrome://transliterator/locale/prefs.properties");
+
 function setUnicodePref(prefName,prefValue,prefBranch) {
-    var sString = Components.classes["@mozilla.org/supports-string;1"].createInstance(Components.interfaces.nsISupportsString);
-    sString.data = prefValue;
-    prefBranch.setComplexValue(prefName,Components.interfaces.nsISupportsString,sString);
+  var sString = Components.classes["@mozilla.org/supports-string;1"].createInstance(Components.interfaces.nsISupportsString);
+  sString.data = prefValue;
+  prefBranch.setComplexValue(prefName,Components.interfaces.nsISupportsString,sString);
 }
 
 function getUnicodePref(prefName, prefBranch) {
-    return prefBranch.getComplexValue(prefName, Components.interfaces.nsISupportsString).data;
+  return prefBranch.getComplexValue(prefName, Components.interfaces.nsISupportsString).data;
 }
 
 function getBoolPref(prefName, prefBranch) {
-    try {
-        return prefBranch.getBoolPref(prefName);
-    } catch (e) {
-        //silence the exception
-       return false;
-    }
+  try {
+    return prefBranch.getBoolPref(prefName);
+  } catch (e) {
+    //silence the exception
+   return false;
+  }
 }
 
 function setShortcutValue(element, shortcut) {
-	element.value = shortcut.replace(/VK_/i, "");
-	element.setAttribute("keyval", shortcut);
+  // Store original shortcut value so that it can be retrieved later
+  element.setAttribute("data-keyval", shortcut.join(" "));
+
+  // Produce a nicer representation of the shortcut to be displayed
+  var mapping = {
+    "alt": "Alt",
+    "control": "Ctrl",
+    "shift": "Shift",
+    "meta": "Meta"
+  };
+  for (var i = 0; i < shortcut.length - 1; i++)
+    shortcut[i] = (mapping.hasOwnProperty(shortcut[i]) ? mapping[shortcut[i]] : shortcut[i]);
+  if (shortcut.length)
+    shortcut[shortcut.length - 1] = shortcut[shortcut.length - 1].replace(/^VK_/, "");
+  element.value = shortcut.join("+");
 }
 
 function getShortcutValue(element) {
-	return element.getAttribute("keyval");
+  return element.getAttribute("data-keyval");
 }
 
 function onLoad() {
+  // load settings
+  var pref = Services.prefs.getBranch("extensions.transliterator.");
 
-    var btnApply = document.documentElement.getButton("extra1");
-    btnApply.label = "Apply";
-    btnApply.addEventListener("click", onAccept, false);
+  for (var i = 0; i < commands.length; i++) {
+    var command = commands[i];
+    var defaultLabel = stringBundle.GetStringFromName(command + ".label");
+    var currentLabel = getUnicodePref("commands." + command + ".label", pref);
+    document.getElementById(command + "-default").value = defaultLabel;
+    document.getElementById(command + "-label").value = currentLabel || defaultLabel;
+    setShortcutValue(document.getElementById(command + "-shortcut"), pref.getCharPref("commands." + command + ".shortcut").split(/\s+/));
+  }
 
-    // load settings
-    var pref = Components.classes['@mozilla.org/preferences-service;1'].getService(Components.interfaces.nsIPrefService).getBranch("extensions.transliterator.");
-
-    document.getElementById("fromtranslit-label").value = getUnicodePref("commands.fromtranslit.label", pref);
-    document.getElementById("totranslit-label").value = getUnicodePref("commands.totranslit.label", pref);
-    document.getElementById("togglemode-label").value = getUnicodePref("commands.togglemode.label", pref);
-
-    //document.getElementById("fromtranslit-shortcut").value = pref.getCharPref("commands.fromtranslit.shortcut");
-    //document.getElementById("totranslit-shortcut").value = pref.getCharPref("commands.totranslit.shortcut");
-    //document.getElementById("togglemode-shortcut").value = pref.getCharPref("commands.togglemode.shortcut");
-    setShortcutValue(document.getElementById("fromtranslit-shortcut"), pref.getCharPref("commands.fromtranslit.shortcut"));
-    setShortcutValue(document.getElementById("totranslit-shortcut"), pref.getCharPref("commands.totranslit.shortcut"));
-    setShortcutValue(document.getElementById("togglemode-shortcut"), pref.getCharPref("commands.togglemode.shortcut"));
-
-    /*
-    var childCount = new Object();
-    var list = pref.getChildList("layouts.", childCount);
-    var fullList = new Array();
-    for (var i = 0; i < childCount.value; i++) {
-        if (list[i].search(/layouts\.[^\.]+$/i) == 0) {
-            var desc = list[i];
-            var value = desc.replace(/layouts\./i, "");
-            try {
-                desc = getUnicodePref(list[i] + ".description", pref);
-            } catch (e) {
-            }
-            fullList[fullList.length] = [desc,value];
-            //menulist.appendItem(desc, value, "");
-        }
-    }
-    //menulist.selectedIndex = 0;
-    fullList.sort();
-    */
     
-    var menulist = document.getElementById("layout-select");
-    var layouts = TransliteratorLayoutLoader.getLayoutList();
-    menulist.removeAllItems();
-    for (var i = 0; i < layouts.length; i++) {
-    	menulist.appendItem(layouts[i].description, layouts[i].name);
-    }
-    /*
-    for (var i = 0; i < fullList.length; i++) {
-        menulist.appendItem(fullList[i][0], fullList[i][1], "");
-    }
-    */
+  var menulist = document.getElementById("layout-select");
+  var layouts = TransliteratorLayoutLoader.getLayoutList();
+  menulist.removeAllItems();
+  for (var i = 0; i < layouts.length; i++) {
+   	menulist.appendItem(layouts[i].description, layouts[i].name);
+  }
 
-    menulist.value = pref.getCharPref("layout");
+  menulist.value = pref.getCharPref("layout");
 
-    window.sizeToContent();
+  window.sizeToContent();
 
 }
 
 
 function shortcutKeyPress(event) {
-    event.preventDefault();
+  // Ignore key presses that have special meaning in dialogs unless a modifier key is pressed
+  if (event.keyCode == event.DOM_VK_RETURN || event.keyCode == event.DOM_VK_ESCAPE || event.keyCode == event.DOM_VK_TAB)
+    if (!event.altKey && !event.ctrlKey && !event.metaKey)
+      return;
 
-    //if (event.keyCode == 0)
-    //  return;
+  event.preventDefault();
 
-    var mods = "";
-    if (event.altKey)
-        mods += (mods == "" ? "" : "+") + "Alt";
-    if (event.ctrlKey)
-        mods += (mods == "" ? "" : "+") + "Ctrl";
-    if (event.shiftKey)
-        mods += (mods == "" ? "" : "+") + "Shift";
-    if (event.metaKey)
-        mods += (mods == "" ? "" : "+") + "Meta";
+  var mods = [];
+  if (event.altKey)
+    mods.push("alt");
+  if (event.ctrlKey)
+    mods.push("control");
+  if (event.shiftKey)
+    mods.push("shift");
+  if (event.metaKey)
+    mods.push("meta");
 
-    var keyCode = event.keyCode? event.keyCode : String.fromCharCode(event.charCode).toLocaleUpperCase().charCodeAt(0);
-    var code = "";
-    //alert(keyCode);
-
+  var code = "";
+  if (event.keyCode) {
     // figure out the vk_ code
     for (var i in event) {
-        if (i.search(/DOM_VK_/i) == 0)
-            if (event[i] == keyCode) {
-                code = i;
-                break;
-            }
+      if (/^DOM_VK_/.test(i)) {
+        if (event[i] == event.keyCode) {
+          code = i.replace(/^DOM_/, "");
+            break;
+        }
+      }
     }
-    code = code.replace(/DOM_/i, "");
+  }
+  else if (event.charCode)
+    code = String.fromCharCode(event.charCode).toLocaleUpperCase();
 
-    //event.target.value = mods + (mods == "" ? "" : "+") + code;
-    setShortcutValue(event.target, mods + (mods == "" ? "" : "+") + code);
+  if (!code)
+    return;
+
+  setShortcutValue(event.target, mods.concat([code]));
 }
 
 function objToString(obj) {
-    var s = "";
-    for(var i in obj)
-        //if ( ("" + i != ("" + i).toUpperCase()) &&
-        //    !(obj[i] instanceof Function))
-        //if (obj[i] instanceof Function)
-        //  s += i + ": function\n";
-        //else
-            s += i + " = " + obj[i] + "\n";
-    return s;
+  var s = "";
+  for(var i in obj)
+    //if ( ("" + i != ("" + i).toUpperCase()) &&
+    //  !(obj[i] instanceof Function))
+    //if (obj[i] instanceof Function)
+    //  s += i + ": function\n";
+    //else
+      s += i + " = " + obj[i] + "\n";
+  return s;
 }
 
 function onAccept() {
-    //save new settings
+  //save new settings
 
-    var pref = Components.classes['@mozilla.org/preferences-service;1'].getService(Components.interfaces.nsIPrefService).getBranch("extensions.transliterator.");
+  var pref = Services.prefs.getBranch("extensions.transliterator.");
 
-    if (document.getElementById("fromtranslit-label").value != getUnicodePref("commands.fromtranslit.label", pref))
-        setUnicodePref("commands.fromtranslit.label", document.getElementById("fromtranslit-label").value, pref);
+  for (var i = 0; i < commands.length; i++) {
+    var command = commands[i];
+    var defaultLabel = stringBundle.GetStringFromName(command + ".label");
+    var currentLabel = document.getElementById(command + "-label").value;
+    setUnicodePref("commands." + command + ".label", currentLabel != defaultLabel ? currentLabel : "", pref);
 
-    if (document.getElementById("totranslit-label").value != getUnicodePref("commands.totranslit.label", pref))
-        setUnicodePref("commands.totranslit.label", document.getElementById("totranslit-label").value, pref);
-
-    if (document.getElementById("togglemode-label").value != getUnicodePref("commands.togglemode.label", pref))
-        setUnicodePref("commands.togglemode.label", document.getElementById("togglemode-label").value, pref);
-
-    var scFrom = getShortcutValue(document.getElementById("fromtranslit-shortcut"));
-    //if (document.getElementById("fromtranslit-shortcut").value != pref.getCharPref("commands.fromtranslit.shortcut"))
-    //    pref.setCharPref("commands.fromtranslit.shortcut", document.getElementById("fromtranslit-shortcut").value);
-    if (scFrom != pref.getCharPref("commands.fromtranslit.shortcut"))
-        pref.setCharPref("commands.fromtranslit.shortcut", scFrom);
-
-    var scTo = getShortcutValue(document.getElementById("totranslit-shortcut"));
-
-    if (scTo != pref.getCharPref("commands.totranslit.shortcut"))
-        pref.setCharPref("commands.totranslit.shortcut", scTo);
-    //if (document.getElementById("totranslit-shortcut").value != pref.getCharPref("commands.totranslit.shortcut"))
-    //    pref.setCharPref("commands.totranslit.shortcut", document.getElementById("totranslit-shortcut").value);
-
-    var scToggle = getShortcutValue(document.getElementById("togglemode-shortcut"));
-    if (scToggle != pref.getCharPref("commands.togglemode.shortcut"))
-        pref.setCharPref("commands.togglemode.shortcut", scToggle);
-    //if (document.getElementById("togglemode-shortcut").value != pref.getCharPref("commands.togglemode.shortcut"))
-    //    pref.setCharPref("commands.togglemode.shortcut", document.getElementById("togglemode-shortcut").value);
+    var shortcut = getShortcutValue(document.getElementById(command + "-shortcut"));
+    pref.setCharPref("commands." + command + ".shortcut", shortcut);
+  }
 
     if (document.getElementById("layout-select").value != pref.getCharPref("layout"))
         pref.setCharPref("layout", document.getElementById("layout-select").value);
@@ -179,23 +153,9 @@ function onAccept() {
 }
 
 function openViewer() {
-    //var pref = Components.classes['@mozilla.org/preferences-service;1'].getService(Components.interfaces.nsIPrefService).getBranch("extensions.transliterator.");
 
-    var layoutName = document.getElementById("layout-select").value;
+  var layoutName = document.getElementById("layout-select").value;
+  var layout = TransliteratorLayoutLoader.loadLayout(layoutName);
 
-    //var layout = getUnicodePref("layouts." + layoutName, pref);
-    //var layoutDesc = getUnicodePref("layouts." + layoutName + ".description", pref);
-    //var caseSensitive = getBoolPref("layouts." + layoutName + ".case_sensitive", pref);
-    
-    var layout = TransliteratorLayoutLoader.loadLayout(layoutName);
-
-    window.openDialog("chrome://transliterator/content/layout-viewer.xul", "dlgview", "chrome,dialog,centerscreen,resizeable=yes", layout); 
-    		
-    		/*{
-        layout: //window.JSON ? window.JSON.parse(layout) : eval(layout),
-        	layout,
-        name:   layoutName,
-        description: layoutDesc,
-        caseSensitive: caseSensitive
-    }*/
+  window.openDialog("chrome://transliterator/content/layout-viewer.xul", "dlgview", "chrome,dialog,centerscreen,resizeable=yes", layout); 
 }

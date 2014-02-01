@@ -1,0 +1,7 @@
+<!ENTITY title "Просмотр раскладки">
+<!ENTITY inverse.caption "Показать обратное сопоставление">
+<!ENTITY target.column "Чтобы получить это">
+<!ENTITY source.column "Надо ввести одно из этих">
+<!ENTITY inverse.source.column "Это">
+<!ENTITY inverse.target.column "Транслитерируется в это">
+<!ENTITY spaces.hint "Строки с пробелами подчеркнуты">
