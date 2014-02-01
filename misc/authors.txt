@@ -1,0 +1,92 @@
+//Customized Serbian Latinica
+serbian
+
+//bkiz (bkiz@canada.com)
+macedonian
+
+//Goran Velkov (goran1@on.net.mk) -- dumped for being an ass
+macedonianofficialenglish
+macedonianofficialunicode
+
+//  Azder (azhder@gmail.com)
+macedonianutf8
+macedonianlatin1
+macedonianlatin2
+
+// Henry H. Tan-Tenn tantenn@lomaji.com 
+taiwanesepoj
+
+//Cherokee transliteration, with standard syllable spelling and most common alternate spellings.
+//by Jesse Chisholm, (c) 2006 -- Offered for the Public Domain.
+//bugfixes by Joshua David (joshua.maxson@gmail.com)
+cherokee
+
+// Jon Thackray http://jon.thackray.org/georgian.html //"Georgian/Kartuli (ქართული) (Transliteration)" 
+georgian
+
+// GaiJin KZ
+qaztranslitcom
+
+//Dimitri Kapshai
+belarus 
+
+//Thomas Martin Widmann twid@bibulus.org
+dks
+kirshenbaum
+xsampa
+
+//José Antonio Martín (ja.martin@lakamarilla.org)
+pinyin 
+
+// deramoz@gmail.com
+kana 
+
+// Alek (don.alejandro.misev@gmail.com)
+greek 
+
+//"Patrick Hall" <pathall@gmail.com> -- Pali
+pali 
+
+//"Vakhtang Jokhadze" <rastrelli_f@yahoo.com> /ვახტანგ ჯოხაძე/ 
+georgian
+
+//"ONE-SKAY" <skyserky@gmail.com>
+serbocroatian
+
+//?
+esperanto 
+
+// Russe pour le clavier français AZERTY // Thierry DOLIDON // http://erga.free.fr/
+russeAzerty 
+
+//Karakalpak -- Jiemurat Mambetkarimov <jiemurat@gmail.com>
+qqtranslit 
+
+
+//Kyrgyz -- Nazym Baibosunov- nazymbay@gmail.com 
+kyrgyz
+
+//Cyrillic for German Keyboards - pawel.sirotkin@googlemail.com  
+german 
+
+//Devanagari -- Anunad Singh - anunad@gmail.com -- does not work (backspace, etc)
+devanagari
+
+// Armenian -- Armen Mkrtchyan - armen@armenm.com
+armenian
+
+//Croatian Glagolitic -- Pavle Mocilac pavle.mocilac2@mail.dcu.ie
+croatianglagolitic
+
+//Canada native languages - Andrew Tagak Jr, andrew@tagak.net
+nunavut
+nunavik
+carrier
+ojibweright
+plainscreeleft
+plainscreeright
+woodlandcreeleft
+woodlandcreeright
+
+//Arabic - Liam Hahne (lhahne@gmail.com), http://arabeasy.net
+arabic

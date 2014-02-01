@@ -15,6 +15,9 @@ var addonData = null;
 function startup(data, reason) {
   addonData = data;
 
+  CU.import("chrome://transliterator/content/layoutLoader.jsm")
+  
+  
   var {TransliteratorService} = require("service");
 
   // Set up default preferences
@@ -36,14 +39,21 @@ function startup(data, reason) {
   };
   Services.scriptloader.loadSubScript(data.resourceURI.spec + "defaults/prefs.js", scope, "utf-8");
 
+  
   // Now the usual initialization
   TransliteratorService.init();
+  
+  
+  
 }
 
 function shutdown(data, reason) {
   var {TransliteratorService} = require("service");
 
   TransliteratorService.cleanup();
+  
+  // clean up loaded js modules
+  Components.utils.unload("chrome://transliterator/content/layoutLoader.jsm");
 }
 
 function install(data, reason) {}

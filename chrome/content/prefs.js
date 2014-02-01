@@ -4,6 +4,8 @@
  * http://mozilla.org/MPL/2.0/.
  */
 
+Components.utils.import("chrome://transliterator/content/layoutLoader.jsm");
+
 function setUnicodePref(prefName,prefValue,prefBranch) {
     var sString = Components.classes["@mozilla.org/supports-string;1"].createInstance(Components.interfaces.nsISupportsString);
     sString.data = prefValue;
@@ -52,6 +54,7 @@ function onLoad() {
     setShortcutValue(document.getElementById("totranslit-shortcut"), pref.getCharPref("commands.totranslit.shortcut"));
     setShortcutValue(document.getElementById("togglemode-shortcut"), pref.getCharPref("commands.togglemode.shortcut"));
 
+    /*
     var childCount = new Object();
     var list = pref.getChildList("layouts.", childCount);
     var fullList = new Array();
@@ -69,10 +72,19 @@ function onLoad() {
     }
     //menulist.selectedIndex = 0;
     fullList.sort();
+    */
+    
     var menulist = document.getElementById("layout-select");
+    var layouts = TransliteratorLayoutLoader.getLayoutList();
+    menulist.removeAllItems();
+    for (var i = 0; i < layouts.length; i++) {
+    	menulist.appendItem(layouts[i].description, layouts[i].name);
+    }
+    /*
     for (var i = 0; i < fullList.length; i++) {
         menulist.appendItem(fullList[i][0], fullList[i][1], "");
     }
+    */
 
     menulist.value = pref.getCharPref("layout");
 
@@ -167,18 +179,23 @@ function onAccept() {
 }
 
 function openViewer() {
-    var pref = Components.classes['@mozilla.org/preferences-service;1'].getService(Components.interfaces.nsIPrefService).getBranch("extensions.transliterator.");
+    //var pref = Components.classes['@mozilla.org/preferences-service;1'].getService(Components.interfaces.nsIPrefService).getBranch("extensions.transliterator.");
 
     var layoutName = document.getElementById("layout-select").value;
 
-    var layout = getUnicodePref("layouts." + layoutName, pref);
-    var layoutDesc = getUnicodePref("layouts." + layoutName + ".description", pref);
-    var caseSensitive = getBoolPref("layouts." + layoutName + ".case_sensitive", pref);
+    //var layout = getUnicodePref("layouts." + layoutName, pref);
+    //var layoutDesc = getUnicodePref("layouts." + layoutName + ".description", pref);
+    //var caseSensitive = getBoolPref("layouts." + layoutName + ".case_sensitive", pref);
+    
+    var layout = TransliteratorLayoutLoader.loadLayout(layoutName);
 
-    window.openDialog("chrome://transliterator/content/layout-viewer.xul", "dlgview", "chrome,dialog,centerscreen,resizeable=no", {
-        layout: window.JSON ? window.JSON.parse(layout) : eval(layout),
+    window.openDialog("chrome://transliterator/content/layout-viewer.xul", "dlgview", "chrome,dialog,centerscreen,resizeable=yes", layout); 
+    		
+    		/*{
+        layout: //window.JSON ? window.JSON.parse(layout) : eval(layout),
+        	layout,
         name:   layoutName,
         description: layoutDesc,
         caseSensitive: caseSensitive
-    });
+    }*/
 }
