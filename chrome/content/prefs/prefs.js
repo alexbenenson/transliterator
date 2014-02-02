@@ -4,7 +4,7 @@
  * http://mozilla.org/MPL/2.0/.
  */
 
-Components.utils.import("chrome://transliterator/content/layoutLoader.jsm");
+Components.utils.import("chrome://transliterator/content/layouts/layoutLoader.jsm");
 
 Components.utils.import("resource://gre/modules/Services.jsm");
 
@@ -157,5 +157,5 @@ function openViewer() {
   var layoutName = document.getElementById("layout-select").value;
   var layout = TransliteratorLayoutLoader.loadLayout(layoutName);
 
-  window.openDialog("chrome://transliterator/content/layout-viewer.xul", "dlgview", "chrome,dialog,centerscreen,resizeable=yes", layout); 
+  window.openDialog("chrome://transliterator/content/layouts/layout-viewer.xul", "dlgview", "chrome,dialog,centerscreen,resizeable=yes", layout); 
 }

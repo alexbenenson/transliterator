@@ -22,7 +22,7 @@
         onload="onLoad();">
         <!--ondialogaccept="return onAccept();"-->
 
-  <script type="application/x-javascript" src="chrome://transliterator/content/layout-viewer.js"/>
+  <script type="application/x-javascript" src="chrome://transliterator/content/layouts/layout-viewer.js"/>
 
   <label id="description" value="" style="font-weight: bold"/>
   <label id="case-sensitivity" value="" />

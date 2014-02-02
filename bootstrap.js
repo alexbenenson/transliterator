@@ -15,7 +15,7 @@ var addonData = null;
 function startup(data, reason) {
   addonData = data;
 
-  CU.import("chrome://transliterator/content/layoutLoader.jsm")
+  CU.import("chrome://transliterator/content/layouts/layoutLoader.jsm")
   
   
   var {TransliteratorService} = require("service");
@@ -53,7 +53,7 @@ function shutdown(data, reason) {
   TransliteratorService.cleanup();
   
   // clean up loaded js modules
-  Components.utils.unload("chrome://transliterator/content/layoutLoader.jsm");
+  Components.utils.unload("chrome://transliterator/content/layouts/layoutLoader.jsm");
 }
 
 function install(data, reason) {}

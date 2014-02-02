@@ -224,7 +224,7 @@ var TransliteratorLayoutLoader = {
         var xhr = this.getXHR();
         
         // synchronous because needs to return the result... ideally this would be an asynchronous call, but that requires a bit of refactoring
-        xhr.open("GET", "chrome://transliterator/content/layouts.data", false);
+        xhr.open("GET", "chrome://transliterator/content/layouts/layouts.data", false);
         xhr.overrideMimeType("text/plain; charset=UTF-8")
         xhr.send();
         

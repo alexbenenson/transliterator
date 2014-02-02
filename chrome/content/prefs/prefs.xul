@@ -24,7 +24,7 @@
         ondialogextra1="return onAccept();"
         onload="onLoad();"
         >
-  <script type="application/x-javascript" src="chrome://transliterator/content/prefs.js"/>
+  <script type="application/x-javascript" src="chrome://transliterator/content/prefs/prefs.js"/>
 
   <groupbox>
     <caption label="&layout.group;"/>
