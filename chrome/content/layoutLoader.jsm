@@ -178,7 +178,7 @@ var TransliteratorLayoutLoader = {
         
         var result = new Array();
         for (var i = 0; i < list.length; i++) {
-            if (list[i].search(/^[^\.]+$/) == 0) {
+            if (list[i].indexOf(".") < 0) {
                 var name = list[i];
                 var desc = this.getUnicodePref(list[i] + ".description", pref);
                 result.push({
