@@ -10,12 +10,24 @@ const CU = Components.utils;
 
 CU.import("resource://gre/modules/Services.jsm");
 
+CU.import("resource://gre/modules/XPCOMUtils.jsm");
+
+var RequireObserver = {
+  observe: function(subject, topic, data) {
+    if (topic == "transliterator-require")
+      subject.wrappedJSObject.exports = require(data);
+  },
+
+  QueryInterface: XPCOMUtils.generateQI([CI.nsISupportsWeakReference, CI.nsIObserver])
+};
+
+
 var addonData = null;
 
 function startup(data, reason) {
   addonData = data;
 
-  CU.import("chrome://transliterator/content/layouts/layoutLoader.jsm")
+  Services.obs.addObserver(RequireObserver, "transliterator-require", true);  
   
   
   var {TransliteratorService} = require("service");
@@ -44,7 +56,6 @@ function startup(data, reason) {
   TransliteratorService.init();
   
   
-  
 }
 
 function shutdown(data, reason) {
@@ -53,7 +64,7 @@ function shutdown(data, reason) {
   TransliteratorService.cleanup();
   
   // clean up loaded js modules
-  Components.utils.unload("chrome://transliterator/content/layouts/layoutLoader.jsm");
+  Services.obs.removeObserver(RequireObserver, "transliterator-require");  
 }
 
 function install(data, reason) {}

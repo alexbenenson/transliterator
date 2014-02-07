@@ -4,9 +4,18 @@
  * http://mozilla.org/MPL/2.0/.
  */
 
-Components.utils.import("chrome://transliterator/content/layouts/layoutLoader.jsm");
 
 Components.utils.import("resource://gre/modules/Services.jsm");
+
+function require(module)
+{
+  var result = {};
+  result.wrappedJSObject = result;
+  Services.obs.notifyObservers(result, "transliterator-require", module);
+  return result.exports;
+}
+
+var {TransliteratorLayoutLoader} = require("layoutLoader");
 
 var commands = ["fromtranslit", "totranslit", "togglemode"];
 var stringBundle = Services.strings.createBundle("chrome://transliterator/locale/prefs.properties");
