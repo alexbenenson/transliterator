@@ -31,6 +31,7 @@ function startup(data, reason) {
   
   
   var {TransliteratorService} = require("service");
+  var {PrefUtils} = require("prefUtils");
 
   // Set up default preferences
   var defaultBranch = Services.prefs.getDefaultBranch("");
@@ -38,7 +39,7 @@ function startup(data, reason) {
     pref: function(pref, value) {
       switch (typeof value) {
         case "string":
-          TransliteratorService.setUnicodePref(pref, value, defaultBranch);
+          PrefUtils.setUnicodePref(pref, value, defaultBranch);
           break;
         case "boolean":
           defaultBranch.setBoolPref(pref, value);

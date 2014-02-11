@@ -16,28 +16,13 @@ function require(module)
 }
 
 var {TransliteratorLayoutLoader} = require("layoutLoader");
+var {PrefUtils} = require("prefUtils");
+
 
 var commands = ["fromtranslit", "totranslit", "togglemode"];
 var stringBundle = Services.strings.createBundle("chrome://transliterator/locale/prefs.properties");
 
-function setUnicodePref(prefName,prefValue,prefBranch) {
-  var sString = Components.classes["@mozilla.org/supports-string;1"].createInstance(Components.interfaces.nsISupportsString);
-  sString.data = prefValue;
-  prefBranch.setComplexValue(prefName,Components.interfaces.nsISupportsString,sString);
-}
 
-function getUnicodePref(prefName, prefBranch) {
-  return prefBranch.getComplexValue(prefName, Components.interfaces.nsISupportsString).data;
-}
-
-function getBoolPref(prefName, prefBranch) {
-  try {
-    return prefBranch.getBoolPref(prefName);
-  } catch (e) {
-    //silence the exception
-   return false;
-  }
-}
 
 function setShortcutValue(element, shortcut) {
   // Store original shortcut value so that it can be retrieved later
@@ -68,7 +53,7 @@ function onLoad() {
   for (var i = 0; i < commands.length; i++) {
     var command = commands[i];
     var defaultLabel = stringBundle.GetStringFromName(command + ".label");
-    var currentLabel = getUnicodePref("commands." + command + ".label", pref);
+    var currentLabel = PrefUtils.getUnicodePref("commands." + command + ".label", pref);
     document.getElementById(command + "-default").value = defaultLabel;
     document.getElementById(command + "-label").value = currentLabel || defaultLabel;
     setShortcutValue(document.getElementById(command + "-shortcut"), pref.getCharPref("commands." + command + ".shortcut").split(/\s+/));
@@ -128,17 +113,6 @@ function shortcutKeyPress(event) {
   setShortcutValue(event.target, mods.concat([code]));
 }
 
-function objToString(obj) {
-  var s = "";
-  for(var i in obj)
-    //if ( ("" + i != ("" + i).toUpperCase()) &&
-    //  !(obj[i] instanceof Function))
-    //if (obj[i] instanceof Function)
-    //  s += i + ": function\n";
-    //else
-      s += i + " = " + obj[i] + "\n";
-  return s;
-}
 
 function onAccept() {
   //save new settings
@@ -149,7 +123,7 @@ function onAccept() {
     var command = commands[i];
     var defaultLabel = stringBundle.GetStringFromName(command + ".label");
     var currentLabel = document.getElementById(command + "-label").value;
-    setUnicodePref("commands." + command + ".label", currentLabel != defaultLabel ? currentLabel : "", pref);
+    PrefUtils.setUnicodePref("commands." + command + ".label", currentLabel != defaultLabel ? currentLabel : "", pref);
 
     var shortcut = getShortcutValue(document.getElementById(command + "-shortcut"));
     pref.setCharPref("commands." + command + ".shortcut", shortcut);
