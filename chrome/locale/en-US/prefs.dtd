@@ -6,3 +6,4 @@
 <!ENTITY shortcut.column "Shortcut">
 <!ENTITY key-selector.tooltip "Hit the desired shortcut keys in this field">
 <!ENTITY apply.label "Apply">
+<!ENTITY override.label "Override conflicting shortcuts">

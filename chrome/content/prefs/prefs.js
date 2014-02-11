@@ -17,7 +17,7 @@ function require(module)
 
 var {TransliteratorLayoutLoader} = require("layoutLoader");
 var {PrefUtils} = require("prefUtils");
-
+var {Constants} = require("constants");
 
 var commands = ["fromtranslit", "totranslit", "togglemode"];
 var stringBundle = Services.strings.createBundle("chrome://transliterator/locale/prefs.properties");
@@ -69,6 +69,9 @@ function onLoad() {
 
   menulist.value = pref.getCharPref("layout");
 
+  
+  document.getElementById("overrideConflicts").checked = PrefUtils.getBoolPref(Constants.OVERRIDE_SHORTCUTS, pref);
+  
   window.sizeToContent();
 
 }
@@ -129,10 +132,14 @@ function onAccept() {
     pref.setCharPref("commands." + command + ".shortcut", shortcut);
   }
 
-    if (document.getElementById("layout-select").value != pref.getCharPref("layout"))
-        pref.setCharPref("layout", document.getElementById("layout-select").value);
+  if (document.getElementById("layout-select").value != pref.getCharPref("layout"))
+    pref.setCharPref("layout", document.getElementById("layout-select").value);
 
-    return true;
+  var override = document.getElementById("overrideConflicts").checked;
+  if (override != PrefUtils.getBoolPref(Constants.OVERRIDE_SHORTCUTS, pref))
+    PrefUtils.setBoolPref(Constants.OVERRIDE_SHORTCUTS, !!override, pref);
+    
+  return true;
 }
 
 function openViewer() {
