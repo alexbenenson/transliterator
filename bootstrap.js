@@ -25,47 +25,58 @@ var RequireObserver = {
 var addonData = null;
 
 function startup(data, reason) {
-  addonData = data;
 
-  Services.obs.addObserver(RequireObserver, "transliterator-require", true);  
-  
-  
-  var {TransliteratorService} = require("service");
-  var {PrefUtils} = require("prefUtils");
+  try {
+    addonData = data;
 
-  // Set up default preferences
-  var defaultBranch = Services.prefs.getDefaultBranch("");
-  var scope = {
-    pref: function(pref, value) {
-      switch (typeof value) {
-        case "string":
-          PrefUtils.setUnicodePref(pref, value, defaultBranch);
-          break;
-        case "boolean":
-          defaultBranch.setBoolPref(pref, value);
-          break;
-        default:
-          CU.reportError("Unknown value type in default preference " + pref);
-          break;
+    Services.obs.addObserver(RequireObserver, "transliterator-require", true);  
+    
+    
+    var {TransliteratorService} = require("service");
+    var {PrefUtils} = require("prefUtils");
+
+    // Set up default preferences
+    var defaultBranch = Services.prefs.getDefaultBranch("");
+    var scope = {
+      pref: function(pref, value) {
+        switch (typeof value) {
+          case "string":
+            PrefUtils.setUnicodePref(pref, value, defaultBranch);
+            break;
+          case "boolean":
+            defaultBranch.setBoolPref(pref, value);
+            break;
+          default:
+            CU.reportError("Unknown value type in default preference " + pref);
+            break;
+        }
       }
-    }
-  };
-  Services.scriptloader.loadSubScript(data.resourceURI.spec + "defaults/prefs.js", scope, "utf-8");
+    };
+    Services.scriptloader.loadSubScript(data.resourceURI.spec + "defaults/prefs.js", scope, "utf-8");
 
   
-  // Now the usual initialization
-  TransliteratorService.init();
-  
+    // Now the usual initialization
+    TransliteratorService.init();
+ 
+   } catch (e) {
+    dump(e);
+    throw e;
+   }
   
 }
 
 function shutdown(data, reason) {
-  var {TransliteratorService} = require("service");
+  try {
+    var {TransliteratorService} = require("service");
 
-  TransliteratorService.cleanup();
-  
-  // clean up loaded js modules
-  Services.obs.removeObserver(RequireObserver, "transliterator-require");  
+    TransliteratorService.cleanup();
+    
+    // clean up loaded js modules
+    Services.obs.removeObserver(RequireObserver, "transliterator-require");  
+  } catch (e) {
+    dump(e);
+    throw e;
+  }
 }
 
 function install(data, reason) {}
@@ -87,7 +98,14 @@ function require(module) {
       },
       wantXrays: false
     });
-    Services.scriptloader.loadSubScript(url.spec, scopes[module], "utf-8");
+
+    try {
+      Services.scriptloader.loadSubScript(url.spec, scopes[module], "utf-8");
+
+    } catch (e) {
+      dump(module + ": " + e);
+      throw(e);
+    }
   }
 
   return scopes[module].exports;
