@@ -1,3 +1,4 @@
 *.xpi
 *.pyc
 .project
+.settings

@@ -3,3 +3,4 @@ syntax:glob
 *.xpi
 *.pyc
 .project
+.settings
