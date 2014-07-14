@@ -73,6 +73,11 @@
           <textbox id="togglemode-label"/>
           <textbox id="togglemode-shortcut" tooltiptext="&key-selector.tooltip;" onkeypress="shortcutKeyPress(event);"/>
         </row>
+        <row align="center">
+          <label id="togglemodeall-default" control="togglemodeall-label"/>
+          <textbox id="togglemodeall-label"/>
+          <textbox id="togglemodeall-shortcut" tooltiptext="&key-selector.tooltip;" onkeypress="shortcutKeyPress(event);"/>
+        </row>
       </rows>
     </grid>
     <checkbox id="overrideConflicts" label="&override.label;" checked="false"/>

@@ -59,7 +59,7 @@ function startup(data, reason) {
     TransliteratorService.init();
  
    } catch (e) {
-    dump(e);
+    console.log(e.message);
     throw e;
    }
   
@@ -74,7 +74,7 @@ function shutdown(data, reason) {
     // clean up loaded js modules
     Services.obs.removeObserver(RequireObserver, "transliterator-require");  
   } catch (e) {
-    dump(e);
+    console.log(e.message);
     throw e;
   }
 }
@@ -94,7 +94,8 @@ function require(module) {
         CI: CI,
         CU: CU,
         require: require,
-        exports: {}
+        exports: {},
+        console: console
       },
       wantXrays: false
     });
@@ -103,7 +104,7 @@ function require(module) {
       Services.scriptloader.loadSubScript(url.spec, scopes[module], "utf-8");
 
     } catch (e) {
-      dump(module + ": " + e);
+      console.log(module + ": " + e.message);
       throw(e);
     }
   }
@@ -111,16 +112,41 @@ function require(module) {
   return scopes[module].exports;
 }
 
+//TODO: proper log levels, get from prefs, default to error
+const DEBUG = true;
+
+var console = {
+  log: function(message) {
+    if (message && (typeof(message) == "object") ) 
+      message = JSON.stringify(message);
+    else if (typeof(message) != "undefined" && message != null && message.toString) {
+      message = message.toString();
+    }
+    Services.console.logStringMessage("Transliterator: " + message);
+  },
+  info: function(message) {
+    this.log(message);
+  },
+  debug: function(message) {
+    if (DEBUG)
+      this.log(message);
+  }
+
+}
+
 //TODO richedit documentelement in iframe in gecko 1.9 accessible via commandDispatcher.focusedElement : see if that helps clean up getActiveNode
+//TODO - cleanup getActiveNode, isEditor, isContentEditable, etc - htmlhtmlelement vs htmlbodyelement, etc. support new input types.
+
 //TODO context-sensitive mapping: a-> [x, y, z] depending on position in a word : [beginning, middle, end]
-//TODO revise chunks, etc in converter & processChar - store objects with in/out strings, drop them into state obj
+//TODO track word position : decide if default is middle unless followed by non-con or default is end until followed by con
 
-//TODO add menu items to popup with class=textbox-contextmenu
 
-//TODO thunderbird search input can't do border (the parent hbox can) but can do outline - find out when outline is more appropriate than border, maybe a way to choose based on gecko version and type of control (input/document/contenteditable chunk)
+//TODO revise chunks, etc in converter & processChar - store objects with in/out strings, drop them into state obj --- DONE? also do something about backspaces in mappings, e.g. hindi
+//TODO store past 2 chunks in state as {in, out}, use for lookbehind -- DONE?
 
+//TODO add menu items to popup with class=textbox-contextmenu (overkill?)
 //TODO add something to the popup menu in instantbird (maybe textbox-contextmenu will give it to me for free)
 
-//TODO store past 2 chunks in state as {in, out}, use for lookbehind
+//TODO thunderbird search input can't do border (the parent hbox can) but can do outline - 
+//     find out when outline is more appropriate than border, maybe a way to choose based on gecko version and type of control (input/document/contenteditable chunk)
 
-//TODO track word position : decide if default is middle unless followed by non-con or default is end until followed by con

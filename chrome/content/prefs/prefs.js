@@ -19,7 +19,7 @@ var {TransliteratorLayoutLoader} = require("layoutLoader");
 var {PrefUtils} = require("prefUtils");
 var {Constants} = require("constants");
 
-var commands = ["fromtranslit", "totranslit", "togglemode"];
+var commands = ["fromtranslit", "totranslit", "togglemode", "togglemodeall"];
 var stringBundle = Services.strings.createBundle("chrome://transliterator/locale/prefs.properties");
 
 
