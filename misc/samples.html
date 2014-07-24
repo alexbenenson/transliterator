@@ -1,0 +1,68 @@
+<!DOCTYPE HTML>
+<HTML>
+
+<HEAD>
+
+	<title>input element sampler</title>
+	<script type="text/javascript">
+	function onLoad() {
+
+		// start editing in mozilla richtext (copied from http://www-archive.mozilla.org/editor/midasdemo/)
+		document.getElementById('midasEditor').contentWindow.document.designMode = "on";
+		try {
+		    document.getElementById('midasEditor').contentWindow.document.execCommand("undo", false, null);
+		}  catch (e) {
+		    alert("Midas editor is not supported by this browser.");
+		}
+	}
+
+	</script>
+
+</HEAD>
+
+<BODY onload="onLoad()">
+
+<h1>Rich Text</h1>
+<h2>Mozilla Midas</h2>
+<iframe id="midasEditor" width="600px" height="200px"></iframe>
+<p>(containing element - iframe - accessible via contentDocument.defaultView.frameElement) </p>
+
+<h2>Div with contentEditable=true</h2>
+<DIV id="contentEditor" style="height: 200px; width: 600px; border: solid 1px blue; outline: solid 1px orange" contentEditable="true"></DIV>
+<p>(containing element is the div itself)</p>
+
+<h1>Input Elements</h1>
+
+<table>
+
+<tr><td>button</td><td><input type="button" value="a button"></td></tr>
+<tr><td>&lt;button&gt;</td><td><button>Another Button</button></td></tr>
+<tr><td>checkbox</td><td><input type="checkbox" value="cb">check box</input></td></tr>
+<tr><td>color</td><td><input type="color" value="#3399FF" name="color picker"></td></tr>
+<tr><td>date</td><td><input type="date"></td></tr>
+<tr><td>datetime</td><td><input type="datetime"></td></tr>
+<tr><td>datetime-local</td><td><input type="datetime-local"></td></tr>
+<tr><td>email</td><td><input type="email" multiple="true"></td></tr>
+<tr><td>file</td><td><input type="file" multiple="true"></td></tr>
+<tr><td>month</td><td><input type="month"></td></tr>
+<tr><td>number</td><td><input type="number"></td></tr>
+<tr><td>password</td><td><input type="password"></td></tr>
+<tr><td>radio</td><td><input type="radio" name="R2">r1</input><input type="radio" name="R2">r2</input></td></tr>
+<tr><td>range</td><td><input type="range"></td></tr>
+<tr><td>reset</td><td><input type="reset"></td></tr>
+<tr><td>search</td><td><input type="search"></td></tr>
+<tr><td>tel</td><td><input type="tel"></td></tr>
+<tr><td>text</td><td><input type="text"></td></tr>
+<tr><td>time</td><td><input type="time"></td></tr>
+<tr><td>url</td><td><input type="url"></td></tr>
+<tr><td>week</td><td><input type="week"></td></tr>
+
+</table>
+
+
+<h2>Text Area</h2>
+<textarea style="width:600px; height: 200px"></textarea>
+
+
+</BODY>
+</HTML>

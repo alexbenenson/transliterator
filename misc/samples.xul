@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	title="XUL input samples"
+> 
+	<!-- set  dom.allow_XUL_XBL_for_file pref to true to be able to load this page -->
+
+
+	<script language="javascript">
+		function initEditor(){
+		  // this function is called to set up the editor
+		  var editor = document.getElementById("ed1");
+		  editor.contentDocument.designMode = 'on';
+
+		  editor = document.getElementById("ed2");
+		  editor.makeEditable();
+		}
+	</script>
+
+	<groupbox>
+		<caption label="Text boxes"/>
+		<grid>
+			<columns>
+				<column flex="1"/>
+				<column flex="2"/>
+				<column flex="1"/>
+			</columns>
+			<rows>
+				<row>
+					<label value="textbox" control="tx1"/>
+					<textbox id="tx1" />
+				</row>
+				<row>
+					<label value="textbox / password" control="tx2"/>
+					<textbox id="tx2" type="password" oninput="document.getElementById('tx2r').value=this.value"/> 
+					<description id="tx2r"/>
+				</row>
+				<row>
+					<label value="textbox / search" control="tx3"/>
+					<textbox id="tx3" type="search" oncommand="document.getElementById('tx3r').value=this.value"/> 
+					<description id="tx3r"/>
+				</row>
+				<row>
+					<label value="textbox / autocomplete" control="tx4"/>
+					<textbox id="tx4" type="autocomplete" /> 
+				</row>
+				<row>
+					<label value="textbox / number" control="tx5"/>
+					<textbox id="tx5" type="number" /> 
+				</row>
+			</rows>
+		</grid>
+	</groupbox>	
+
+	<groupbox>
+		<caption label="Editors"/>
+		<grid>
+			<columns>
+				<column flex="1"/>
+				<column flex="3"/>
+			</columns>
+			<rows>
+				<row>
+					<label value="Text" />
+					<editor id="ed1" src="about:blank" editortype="text" height="200" style="border: inset 1px WindowFrame; background-color: window;"/>
+				</row>
+				<row>
+					<label value="HTML" />
+					<editor id="ed2" editortype="html" height="200" style="border: inset 1px WindowFrame; background-color: window;"></editor>
+				</row>
+			</rows>
+		</grid>
+	</groupbox>
+
+
+	
+
+</window>
