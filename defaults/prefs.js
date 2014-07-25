@@ -7,3 +7,7 @@ pref("extensions.transliterator.commands.togglemode.label", "");
 pref("extensions.transliterator.commands.togglemodeall.shortcut", "shift VK_F2");
 pref("extensions.transliterator.commands.togglemodeall.label", "");
 pref("extensions.transliterator.layout","default");
+pref("extensions.transliterator.decoration.style", "dotted");
+pref("extensions.transliterator.decoration.color", "#39F");
+pref("extensions.transliterator.decoration.width", "2px");
+//pref("extensions.transliterator.console.debug", "false");
