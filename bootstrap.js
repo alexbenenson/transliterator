@@ -112,27 +112,41 @@ function require(module) {
   return scopes[module].exports;
 }
 
-//TODO: proper log levels, get from prefs, default to error
-const DEBUG = true;
 
-var console = {
-  log: function(message) {
-    if (message && (typeof(message) == "object") ) 
-      message = JSON.stringify(message);
-    else if (typeof(message) != "undefined" && message != null && message.toString) {
-      message = message.toString();
-    }
-    Services.console.logStringMessage("Transliterator: " + message);
-  },
-  info: function(message) {
-    this.log(message);
-  },
-  debug: function(message) {
-    if (DEBUG)
+var console = null;
+
+
+(function() {
+
+  prefBranch =  Services.prefs.getBranch("extensions.transliterator.");
+  var  DEBUG = false;
+  try {
+        DEBUG= prefBranch.getBoolPref("console.debug");
+  } catch (e) {}
+
+
+  console = {
+    log: function(message) {
+      if (message && (typeof(message) == "object") ) 
+        message = JSON.stringify(message);
+      else if (typeof(message) != "undefined" && message != null && message.toString) {
+        message = message.toString();
+      }
+      Services.console.logStringMessage("Transliterator: " + message);
+    },
+    info: function(message) {
       this.log(message);
-  }
+    },
+    debug: function(message) {
+      if (DEBUG)
+        this.log(message);
+    }
 
-}
+  };
+
+})();
+
+
 
 //TODO richedit documentelement in iframe in gecko 1.9 accessible via commandDispatcher.focusedElement : see if that helps clean up getActiveNode
 //TODO - cleanup getActiveNode, isEditor, isContentEditable, etc - htmlhtmlelement vs htmlbodyelement, etc. support new input types.
