@@ -39,9 +39,10 @@
     <em:contributor>Andrew Tagak Jr.</em:contributor>
     <em:contributor>Liam Hahne</em:contributor>
     <em:contributor>Wladimir Palant</em:contributor>
+    <em:contributor>Alexander Usyskin</em:contributor>
 
     <em:type>2</em:type>
-    <em:version>0.9.1beta2</em:version>
+    <em:version>0.9.1</em:version>
     <em:id>{07d43380-b306-4a08-a47a-140efd1b4700}</em:id>
 
     <em:name>Transliterator</em:name>
